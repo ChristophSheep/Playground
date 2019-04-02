@@ -59,12 +59,17 @@ func ReadM3U8() {
 		masterpl := p.(*m3u8.MasterPlaylist)
 		fmt.Println("m3u8.MASTER:")
 		fmt.Printf("%+v\n", masterpl)
+		for i, v := range masterpl.Variants { // Variants of different streams
+			fmt.Println("i:", i, "uri:", v.URI)
+			fmt.Println("i:", i, "codecs:", v.Codecs)
+			fmt.Println("i:", i, "resolution:", v.Resolution)
+			fmt.Println("i:", i, "name:", v.Name)
+		}
 
 	case m3u8.MEDIA:
-		mediapl := p.(*m3u8.MediaPlaylist)
+		mediapl := p.(*m3u8.MediaPlaylist) // Segments of a live stream
 		fmt.Println("m3u8.MEDIA:")
-		for i := uint(0); i < mediapl.Count(); i++ {
-			s := mediapl.Segments[i]
+		for i, s := range mediapl.Segments {
 			fmt.Println("i:", i, "uri:", s.URI)
 		}
 	}
@@ -100,24 +105,8 @@ func main() {
 	folder := "./"
 	downloadTo(urlRaw, folder)
 
-	// given:
-	//  - url (orf1 livestream)
-	//  - timeStart
-	//  - timeEnd
-
-	// First load the mediaplaylist from masterplaylist
-	// Always load mediaplaylist
-
-	/*
-		sequenceStartNr := 200756
-		templateUrl := "http://orf1.orfstg.cdn.ors.at/out/u/orf1/q6a/manifest_4_###.ts?m=1552488594&f=5"
-
-		i := sequenceStartNr
-		for {
-			url, tsFileName := getCurl(i, templateUrl)
-			fmt.Println("url:", url, "filename:", tsFileName)
-			i++
-		}
-	*/
+	fmt.Println()
+	fmt.Println()
+	ReadM3U8()
 
 }
