@@ -5,6 +5,15 @@ ORF live streams by using m3u8 library to
 get the informaion of the .ts files to
 download.
 
+
+# m3u8 playlist
+
+First read the masterplaylist. The masterplaylist contains
+the variant of all stream with different qualities.
+Each variant has a URL where you get the real mediaplaylist.
+In a live stream there are only x segments inside to download.
+
+
 # Setup
 
 Install m3u8 library
