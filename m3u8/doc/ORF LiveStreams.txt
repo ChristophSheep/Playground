@@ -1,0 +1,35 @@
+http://orf1.orfstg.cdn.ors.at/out/u/orf1/q4a/manifest.m3u8
+ORF 1 – Mittel
+
+http://orf1.orfstg.cdn.ors.at/out/u/orf1/q6a/manifest.m3u8
+ORF 1 – Hoch
+
+http://orf1.orfstg.cdn.ors.at/out/u/orf1/q8c/manifest.m3u8
+ORF 1 – Sehr hoch
+
+http://orf1.orfstg.cdn.ors.at/out/u/orf1/qxb/manifest.m3u8
+ORF 1 – Adaptiv
+
+http://orf2.orfstg.cdn.ors.at/out/u/orf2/q4a/manifest.m3u8
+ORF 2 – Mittel
+
+http://orf2.orfstg.cdn.ors.at/out/u/orf2/q6a/manifest.m3u8
+ORF 2 – Hoch
+
+http://orf2.orfstg.cdn.ors.at/out/u/orf2/q8c/manifest.m3u8
+ORF 2 – Sehr Hoch
+
+http://orf2.orfstg.cdn.ors.at/out/u/orf2/qxb/manifest.m3u8
+ORF 2 – Adaptiv
+
+http://orfs.orfstg.cdn.ors.at/out/u/orfs/q4a/manifest.m3u8
+ORF Sport+ – Mittel
+
+http://orfs.orfstg.cdn.ors.at/out/u/orfs/q6a/manifest.m3u8
+ORF Sport+ – Hoch
+
+http://orfs.orfstg.cdn.ors.at/out/u/orfs/q8c/manifest.m3u8
+ORF Sport+ – Sehr Hoch
+
+http://orfs.orfstg.cdn.ors.at/out/u/orfs/qxb/manifest.m3u8
+ORF Sport+ – Adaptiv
