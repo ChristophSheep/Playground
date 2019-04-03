@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/mysheep/cell"
 )
@@ -13,21 +14,51 @@ const (
 func MediaGrapper(masterItems <-chan DownloadItem, mediaItems chan<- DownloadItem) {
 	for {
 		item := <-masterItems
+		baseUrl := getBaseUrl(item.url)
+
 		mediaUrl, err := getMediaPlayListUrl(item.url)
 		if err == nil {
+			if isRelativeUrl(mediaUrl) {
+				mediaUrl = baseUrl + mediaUrl
+			}
 			mediaItems <- DownloadItem{url: mediaUrl, folder: item.folder}
 		}
 	}
 }
 
-func SegmentsDownloader(items <-chan DownloadItem, downloaded chan<- m3u8URL) {
+func SegmentsDownloader(itemsQueue <-chan DownloadItem, downloaded chan<- m3u8URL) {
+
+	downloadedUrls := map[m3u8URL]bool{}
+
 	for {
-		item := <-items
+		item := <-itemsQueue
+
+		_, present := downloadedUrls[item.url]
+		if present {
+			continue
+		}
+		downloadedUrls[item.url] = false // queued but download not finished
+
 		if DEBUG {
+			// TODO: print to channel of console (stdout)
+
+			//func Println(a ...interface{}) (n int, err error) {
+			//	return Fprintln(os.Stdout, a...)
+			//}
+
+			//var (
+			//	Stdin  = NewFile(uintptr(syscall.Stdin), "/dev/stdin")
+			//	Stdout = NewFile(uintptr(syscall.Stdout), "/dev/stdout")
+			//	Stderr = NewFile(uintptr(syscall.Stderr), "/dev/stderr")
+			//)
+
 			fmt.Println("Download url:", item.url)
+			time.Sleep(5 * time.Second)
+
 		} else {
 			downloadItem(item)
 		}
+		downloadedUrls[item.url] = true // queued and finished
 		downloaded <- item.url
 	}
 }
@@ -48,9 +79,6 @@ func SegmentsGrapper(mediaItems <-chan DownloadItem, segmentItems chan<- Downloa
 		segUrls, err := getMediaSegmentsUrls(item.url)
 		if err == nil {
 			for _, surl := range segUrls {
-				//
-				// TODO: Check if segments already queued and/or downloaded
-				//
 				queueItem(surl)
 			}
 		}
@@ -66,7 +94,7 @@ func main() {
 
 	masterItems := make(chan DownloadItem)
 	mediaItems := make(chan DownloadItem)
-	segItems := make(chan DownloadItem, 3)
+	segItemsQueue := make(chan DownloadItem, 100)
 	downloaded := make(chan m3u8URL, 100)
 
 	//
@@ -86,8 +114,8 @@ func main() {
 	// Setup network
 	//
 	go MediaGrapper(masterItems, mediaItems)
-	go SegmentsGrapper(mediaItems, segItems)
-	go SegmentsDownloader(segItems, downloaded) // TODO: more worker e.g. 3
+	go SegmentsGrapper(mediaItems, segItemsQueue)
+	go SegmentsDownloader(segItemsQueue, downloaded) // TODO: more worker e.g. 3
 
 	// Wait until quit
 	//

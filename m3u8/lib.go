@@ -59,7 +59,7 @@ func getBaseUrl(urlRaw m3u8URL) m3u8URL {
 
 	//	[scheme:][//[userinfo@]host][/]path[?query][#fragment]
 
-	res := url.Scheme + "//" + url.Host + path.Dir(url.Path) + "/"
+	res := url.Scheme + "://" + url.Host + path.Dir(url.Path) + "/"
 	return m3u8URL(res)
 }
 
