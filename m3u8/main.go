@@ -147,12 +147,21 @@ func getBaseUrl(urlRaw m3u8URL) m3u8URL {
 
 func main() {
 
+	//
+	// Channels
+	//
 	quit := make(chan bool)
 	items := make(chan DownloadItem, 100)
 	downloaded := make(chan m3u8URL, 100)
 
+	//
+	// Test URL
+	//
 	urlMasterRaw := m3u8URL("http://orf1.orfstg.cdn.ors.at/out/u/orf1/q6a/manifest.m3u8")
 
+	//
+	// Commands function
+	//
 	addItem := func(url m3u8URL, baseUrl m3u8URL) {
 
 		if isRelativeUrl(url) {
@@ -186,11 +195,15 @@ func main() {
 		"test": func() { test(urlMasterRaw) },
 	}
 
+	//
+	// Setup network
+	//
 	go Downloader(items, downloaded)
 	go cell.Console(cmds)
 
+	// Wait until quit
+	//
 	<-quit
-
 }
 
 /*
