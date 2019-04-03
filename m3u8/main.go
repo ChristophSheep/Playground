@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -12,15 +11,21 @@ import (
 	"path"
 
 	"github.com/grafov/m3u8"
+	"github.com/mysheep/cell"
 )
 
-type URL string
+type m3u8URL string
 
-func downloadTo(url string, folder string) {
+type DownloadItem struct {
+	url    m3u8URL
+	folder string
+}
+
+func downloadTo(url m3u8URL, folder string) {
 
 	fmt.Println("download", url, "to", folder)
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(string(url))
 	if err != nil {
 		panic(err)
 	}
@@ -38,16 +43,17 @@ func downloadTo(url string, folder string) {
 	f.Write(body)
 }
 
-func Downloader(nextUrl <-chan string, downloaded chan<- string) {
+func Downloader(items <-chan DownloadItem, downloaded chan<- m3u8URL) {
 	for {
-		url := <-nextUrl
+		item := <-items
 		// TODO: download
-		downloaded <- url
+		fmt.Println("Download url:", item.url)
+		//
+		downloaded <- item.url
 	}
 }
 
-func getMediaPlayListUrl(m3u8Url URL) (uri URL, err error) {
-
+func getPlaylist(m3u8Url m3u8URL) (m3u8.Playlist, m3u8.ListType, error) {
 	resp, err := http.Get(string(m3u8Url))
 	if err != nil {
 		panic(err)
@@ -56,8 +62,12 @@ func getMediaPlayListUrl(m3u8Url URL) (uri URL, err error) {
 	body, err := ioutil.ReadAll(resp.Body)
 
 	reader := bytes.NewReader(body)
+	return m3u8.DecodeFrom(reader, true)
+}
 
-	pl, listType, err := m3u8.DecodeFrom(reader, true)
+func getMediaPlayListUrl(m3u8Url m3u8URL) (uri m3u8URL, err error) {
+
+	pl, listType, err := getPlaylist(m3u8Url)
 	if err != nil {
 		panic(err)
 	}
@@ -65,39 +75,30 @@ func getMediaPlayListUrl(m3u8Url URL) (uri URL, err error) {
 	if listType == m3u8.MASTER {
 		masterpl := pl.(*m3u8.MasterPlaylist)
 		url := masterpl.Variants[0].URI
-		return URL(url), nil
+		return m3u8URL(url), nil
 	}
 
-	return URL(""), errors.New("m3u8 file is not a masterplaylist")
+	return m3u8URL(""), errors.New("m3u8 file is not a playlist of type MASTER")
 }
 
-func getMediaPlayListSegments(m3u8Url URL) (urls []URL, err error) {
+func getMediaPlayListSegementsUrls(m3u8Url m3u8URL) (urls []m3u8URL, err error) {
 
-	mapUrl := func(c uint, ss []*m3u8.MediaSegment, f func(m3u8.MediaSegment) URL) []URL {
-		fmt.Println("len:", c)
-		vsm := make([]URL, c)
+	mapUrl := func(count uint, ss []*m3u8.MediaSegment, f func(m3u8.MediaSegment) m3u8URL) []m3u8URL {
+		urls := make([]m3u8URL, count)
 		var i uint = 0
-		for i = 0; i < c; i++ {
-			vsm[i] = f(*ss[i])
+		for i = 0; i < count; i++ {
+			urls[i] = f(*ss[i])
 		}
-		return vsm
+		return urls
 	}
 
-	resp, err := http.Get(string(m3u8Url))
+	getURL := func(segment m3u8.MediaSegment) m3u8URL {
+		return m3u8URL(segment.URI)
+	}
+
+	pl, listType, err := getPlaylist(m3u8Url)
 	if err != nil {
 		panic(err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-
-	reader := bytes.NewReader(body)
-	pl, listType, err := m3u8.DecodeFrom(reader, true)
-	if err != nil {
-		panic(err)
-	}
-
-	getURL := func(segment m3u8.MediaSegment) URL {
-		return URL(segment.URI)
 	}
 
 	if listType == m3u8.MEDIA {
@@ -107,59 +108,94 @@ func getMediaPlayListSegments(m3u8Url URL) (urls []URL, err error) {
 		return urls, nil
 	}
 
-	empty := make([]URL, 0)
-	return empty, errors.New("m3u8 is not a media playlist file")
+	empty := make([]m3u8URL, 0)
+	return empty, errors.New("m3u8 is not a playlist file of type MEDIA")
 }
 
-func getFilename(urlRaw string) string {
-	url, err := url.Parse(urlRaw)
+func getFilename(urlRaw m3u8URL) string {
+
+	url, err := url.Parse(string(urlRaw))
 	if err != nil {
 		panic(err)
 	}
+
 	return path.Base(url.Path)
+}
+
+func isRelativeUrl(urlRaw m3u8URL) bool {
+
+	url, err := url.Parse(string(urlRaw))
+	if err != nil {
+		panic(err)
+	}
+
+	return (url.IsAbs() == false)
+}
+
+func getBaseUrl(urlRaw m3u8URL) m3u8URL {
+
+	url, err := url.Parse(string(urlRaw))
+	if err != nil {
+		panic(err)
+	}
+
+	//	[scheme:][//[userinfo@]host][/]path[?query][#fragment]
+
+	res := url.Scheme + "//" + url.Host + path.Dir(url.Path) + "/"
+	return m3u8URL(res)
 }
 
 func main() {
 
-	urlRaw := "http://orf1.orfstg.cdn.ors.at/out/u/orf1/q6a/manifest.m3u8"
-	url, err := getMediaPlayListUrl(URL(urlRaw))
-	if err == nil {
-		urls, err2 := getMediaPlayListSegments(url)
-		if err2 != nil {
-			panic(err)
+	quit := make(chan bool)
+	items := make(chan DownloadItem, 100)
+	downloaded := make(chan m3u8URL, 100)
+
+	urlMasterRaw := m3u8URL("http://orf1.orfstg.cdn.ors.at/out/u/orf1/q6a/manifest.m3u8")
+
+	addItem := func(url m3u8URL, baseUrl m3u8URL) {
+
+		if isRelativeUrl(url) {
+			url = baseUrl + url
 		}
-		for i, url := range urls {
-			fmt.Println("i:", i, "url:", url)
-			downloadTo(string(url), ".")
+
+		items <- DownloadItem{url: url, folder: "."}
+	}
+
+	test := func(urlRaw m3u8URL) {
+
+		baseUrl := getBaseUrl(urlMasterRaw)
+
+		url, err1 := getMediaPlayListUrl(m3u8URL(urlMasterRaw))
+		if err1 == nil {
+			urls, err2 := getMediaPlayListSegementsUrls(url)
+			if err2 == nil {
+				for _, url := range urls {
+					addItem(url, baseUrl)
+				}
+
+			}
 		}
 	}
 
-	/*
-		url, err := url.Parse(urlRaw)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("scheme:", url.Scheme)
-		fmt.Println("host:", url.Host)
-		fmt.Println("path:", url.Path)
-		fmt.Println("isAbs:", url.IsAbs())
-		fmt.Println("base path:", path.Base(url.Path))
-		fmt.Println("dir path:", path.Dir(url.Path))
-		fmt.Println("ext path:", path.Ext(path.Base(url.Path)))
+	//
+	// Console Commands
+	//
+	cmds := map[string]func(){
+		"quit": func() { quit <- true },
+		"test": func() { test(urlMasterRaw) },
+	}
 
-		folder := "./"
-		downloadTo(urlRaw, folder)
+	go Downloader(items, downloaded)
+	go cell.Console(cmds)
 
-		fmt.Println()
-		fmt.Println()
-		ReadM3U8()
-
-	*/
+	<-quit
 
 }
 
+/*
 func ReadM3U8() {
-	//(*File, error)
+
 	f, err := os.Open("./example/masterplaylist.m3u8")
 	if err != nil {
 		panic(err)
@@ -190,3 +226,4 @@ func ReadM3U8() {
 		}
 	}
 }
+*/
