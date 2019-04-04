@@ -2,6 +2,14 @@ package integer
 
 import "fmt"
 
+func Distributor(in <-chan int, out1 chan<- int, out2 chan<- int) {
+	for {
+		val := <-in
+		out1 <- val
+		out2 <- val
+	}
+}
+
 func Add1(in <-chan int, out chan<- int) {
 	for {
 		val := <-in
