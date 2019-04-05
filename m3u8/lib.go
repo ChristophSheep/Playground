@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"time"
 
 	"github.com/grafov/m3u8"
 )
@@ -18,6 +19,10 @@ type m3u8URL string
 type DownloadItem struct {
 	url    m3u8URL
 	folder string
+}
+
+func printMsg(object string, msg string) {
+	fmt.Printf("%25s - %s\n", object, msg)
 }
 
 func getFilename(urlRaw m3u8URL) string {
@@ -66,6 +71,11 @@ func getBaseUrl(urlRaw m3u8URL) m3u8URL {
 // downloadTo downloads the segments from a media file
 // e.g. foo1001.ts
 func downloadItem(item DownloadItem) {
+
+	if DEBUG {
+		time.Sleep(5 * time.Second)
+		return
+	}
 
 	fmt.Println("download", item.url, "to folder", item.folder)
 
@@ -120,7 +130,7 @@ func getMediaPlayListUrl(m3u8Url m3u8URL) (uri m3u8URL, err error) {
 
 // getMediaSegmentsUrls get the urls of the
 // segments in a media play list file
-func getMediaSegmentsUrls(m3u8Url m3u8URL) (urls []m3u8URL, err error) {
+func getMediaSegmentsUrls(m3u8Url m3u8URL) (urls []m3u8URL, err error, targetDuration float64) {
 
 	mapUrl := func(count uint, ss []*m3u8.MediaSegment, f func(m3u8.MediaSegment) m3u8URL) []m3u8URL {
 		urls := make([]m3u8URL, count)
@@ -144,9 +154,9 @@ func getMediaSegmentsUrls(m3u8Url m3u8URL) (urls []m3u8URL, err error) {
 		mediapl := pl.(*m3u8.MediaPlaylist)
 		c := mediapl.Count()
 		urls := mapUrl(c, mediapl.Segments, getURL)
-		return urls, nil
+		return urls, nil, mediapl.TargetDuration
 	}
 
 	empty := make([]m3u8URL, 0)
-	return empty, errors.New("m3u8 is not a playlist file of type MEDIA")
+	return empty, errors.New("m3u8 is not a playlist file of type MEDIA"), 0
 }
