@@ -112,6 +112,7 @@ func main() {
 	// Channels
 	//
 	quit := make(chan bool)
+
 	quitRequest0 := make(chan bool)
 	quitRequest1 := make(chan bool)
 	quitRequest2 := make(chan bool)
