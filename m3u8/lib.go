@@ -1,23 +1,15 @@
 package main
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/url"
-	"os"
 	"path"
-	"time"
 
-	"github.com/grafov/m3u8"
+	"github.com/mysheep/cell/cm3u8"
 )
 
-type m3u8URL string
-
 type DownloadItem struct {
-	url    m3u8URL
+	url    cm3u8.M3U8URL
 	folder string
 }
 
@@ -25,7 +17,7 @@ func printMsg(object string, msg string) {
 	fmt.Printf("%25s - %s\n", object, msg)
 }
 
-func getFilename(urlRaw m3u8URL) string {
+func getFilename(urlRaw cm3u8.M3U8URL) string {
 
 	url, err := url.Parse(string(urlRaw))
 	if err != nil {
@@ -42,6 +34,7 @@ func getFilename(urlRaw m3u8URL) string {
 //
 // e.g. http://server.com/file.ts is absolute url
 //      file.ts is a relative url
+/*
 func isRelativeUrl(urlRaw m3u8URL) bool {
 
 	url, err := url.Parse(string(urlRaw))
@@ -51,10 +44,11 @@ func isRelativeUrl(urlRaw m3u8URL) bool {
 
 	return (url.IsAbs() == false)
 }
-
+*/
 // getBaseUrl gets the base from with filename
 // e.g. from http://server.com/folder/file.txt
 //      get baseUrl -> http://server.com/folder/
+/*
 func getBaseUrl(urlRaw m3u8URL) m3u8URL {
 
 	url, err := url.Parse(string(urlRaw))
@@ -67,9 +61,10 @@ func getBaseUrl(urlRaw m3u8URL) m3u8URL {
 	res := url.Scheme + "://" + url.Host + path.Dir(url.Path) + "/"
 	return m3u8URL(res)
 }
-
+*/
 // downloadTo downloads the segments from a media file
 // e.g. foo1001.ts
+/*
 func downloadItem(item DownloadItem) {
 
 	if DEBUG {
@@ -96,8 +91,9 @@ func downloadItem(item DownloadItem) {
 	defer f.Close() // f.Close will run when we're finished.
 	f.Write(body)
 }
-
+*/
 // getPlaylist get playlist from url master or media playlist
+/*
 func getPlaylist(m3u8Url m3u8URL) (m3u8.Playlist, m3u8.ListType, error) {
 	resp, err := http.Get(string(m3u8Url))
 	if err != nil {
@@ -109,9 +105,10 @@ func getPlaylist(m3u8Url m3u8URL) (m3u8.Playlist, m3u8.ListType, error) {
 	reader := bytes.NewReader(body)
 	return m3u8.DecodeFrom(reader, true)
 }
-
+*/
 // getMediaPlayListUrl get the media play list url
 // from first variant of master playlist
+/*
 func getMediaPlayListUrl(m3u8Url m3u8URL) (uri m3u8URL, err error) {
 
 	pl, listType, err := getPlaylist(m3u8Url)
@@ -127,9 +124,10 @@ func getMediaPlayListUrl(m3u8Url m3u8URL) (uri m3u8URL, err error) {
 
 	return m3u8URL(""), errors.New("m3u8 file is not a playlist of type MASTER")
 }
-
+*/
 // getMediaSegmentsUrls get the urls of the
 // segments in a media play list file
+/*
 func getMediaSegmentsUrls(m3u8Url m3u8URL) (urls []m3u8URL, err error, targetDuration float64) {
 
 	mapUrl := func(count uint, ss []*m3u8.MediaSegment, f func(m3u8.MediaSegment) m3u8URL) []m3u8URL {
@@ -160,3 +158,4 @@ func getMediaSegmentsUrls(m3u8Url m3u8URL) (urls []m3u8URL, err error, targetDur
 	empty := make([]m3u8URL, 0)
 	return empty, errors.New("m3u8 is not a playlist file of type MEDIA"), 0
 }
+*/

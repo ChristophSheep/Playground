@@ -4,124 +4,151 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/grafov/m3u8"
 	"github.com/mysheep/cell"
-	"github.com/mysheep/cell/boolean"
+	"github.com/mysheep/cell/cm3u8"
+	"github.com/mysheep/cell/ctime"
+	"github.com/mysheep/cell/web"
 )
 
 const (
-	DEBUG = true
+	DEBUG = false
 )
 
-func MediaGrapper(masterItems <-chan DownloadItem, mediaItems chan<- DownloadItem) {
-	for {
-		item := <-masterItems
-		baseUrl := getBaseUrl(item.url)
+// download what?
+//  - channel ?
+//  - when ?
+//  - to folder ?
 
-		mediaUrl, err := getMediaPlayListUrl(item.url)
-		if err == nil {
-			if isRelativeUrl(mediaUrl) {
-				mediaUrl = baseUrl + mediaUrl
-			}
-			mediaItems <- DownloadItem{url: mediaUrl, folder: item.folder}
-		}
-		time.Sleep(1 * time.Second)
+var (
+	channels = map[string]cm3u8.M3U8URL{
+		"orf1": cm3u8.M3U8URL("http://orf1.orfstg.cdn.ors.at/out/u/orf1/q6a/manifest.m3u8"),
+		"orf2": cm3u8.M3U8URL("http://orf2.orfstg.cdn.ors.at/out/u/orf2/q4a/manifest.m3u8"),
 	}
+)
+
+type TimeSlot struct {
+	start time.Time
+	end   time.Time
 }
 
-func SegmentsGrapper(mediaItems <-chan DownloadItem, startSignal, stopSignal <-chan bool, segmentItems chan<- DownloadItem) {
+type DownloadOrder struct {
+	channel  string
+	timeSlot TimeSlot
+	folder   string
+}
 
-	<-startSignal // Wait for start
+func Grapper(order DownloadOrder) {
 
-	quit := false
+	masterUrls := make(chan cm3u8.M3U8URL)
+	mediaUrls := make(chan cm3u8.M3U8URL)
+	downloadedUrls := make(chan cm3u8.M3U8URL)
+
+	masterPlaylists := make(chan m3u8.MasterPlaylist)
+	mediaPlaylists := make(chan m3u8.MediaPlaylist)
+
+	downloadItems := make(chan DownloadItem)
+
+	timeSlots := make(chan TimeSlot)
+	startSignal := make(chan bool)
+	stopSignal := make(chan bool)
+
+	// List of queued items (entry is there but false)
+	// and downloaded items (entry is there but true)
+	downloadedItems := map[cm3u8.M3U8URL]bool{}
+
+	go StartStopTimer(timeSlots, startSignal, stopSignal)
+	go cm3u8.MasterLoader(masterUrls, masterPlaylists)
+	go cm3u8.MediaLoader(mediaUrls, mediaPlaylists)
+	go Downloader(downloadItems, downloadedUrls)
+
+	// Wait for Start Signal ...
+	<-startSignal
+	// ... then insert url to network
+	masterUrls <- channels[order.channel]
+
+	// Wait for master playlist
+	masterPlaylist := <-masterPlaylists
+	mediaUrl := masterPlaylist.Variants[0].URI
+	mediaUrls <- cm3u8.M3U8URL(mediaUrl) // TODO: make absolute of relative url
+
+	// Wait for media playlist with segments
+	// Download segmensts until stop signal is receive
 	go func() {
 		for {
-			<-stopSignal
-			quit = true
+			mediaPlaylist := <-mediaPlaylists
+			for _, mediaSegment := range mediaPlaylist.Segments {
+
+				// TODO: make absolute of relative url
+				urlToDownload := cm3u8.M3U8URL(mediaSegment.URI)
+				downloadedItems[urlToDownload] = false
+
+				// TODO: Check if url already queued !!!
+				downloadItems <- DownloadItem{
+					url:    urlToDownload,
+					folder: order.folder,
+				}
+			}
 		}
 	}()
 
-	item := <-mediaItems
-	baseUrl := getBaseUrl(item.url)
-
-	queueItem := func(surl m3u8URL) {
-		if isRelativeUrl(surl) {
-			surl = baseUrl + surl
+	// Downloaded urls are mark in map as downloaded
+	go func() {
+		for {
+			downloadedUrl := <-downloadedUrls
+			downloadedItems[downloadedUrl] = true
 		}
-		segmentItems <- DownloadItem{url: surl, folder: item.folder}
-	}
-
-	for {
-
-		segUrls, err, targetDurationInSec := getMediaSegmentsUrls(item.url)
-		msg := fmt.Sprintf("Grap %v segment(s) and queue them to download", len(segUrls))
-		printMsg("Grabber", msg)
-
-		if err == nil {
-			for _, surl := range segUrls {
-				queueItem(surl)
-			}
-		}
-
-		if quit {
-			printMsg("Grabber", "Quit requested, stop grabbing")
-			break
-		}
-
-		// TODO: HOW LONG TO WAIT ????
-		time.Sleep(time.Duration(targetDurationInSec/2.0) * time.Second)
-	}
+	}()
 }
 
-func SegmentsDownloader(itemsQueue <-chan DownloadItem, downloaded chan<- m3u8URL) {
+func Downloader(items <-chan DownloadItem, downloaded chan<- cm3u8.M3U8URL) {
 
-	// TODO: Rethink - Give other component responsibility
-	downloadedUrls := map[m3u8URL]bool{}
+	urls := make(chan string)
+	contents := make(chan []byte)
+	filenames := make(chan string)
+	bytess := make(chan []byte)
+	savedFilenames := make(chan string)
 
-	// TODO: Rethink - Give other component responsibility
-	isAlreadyDownloaded := func(url m3u8URL) bool {
-		isDownloaded, present := downloadedUrls[url]
-		return present && isDownloaded
-	}
+	go web.Downloader(urls, contents)
+	go web.Saver(filenames, bytess, savedFilenames)
 
 	for {
+		item := <-items
 
-		item := <-itemsQueue
+		// Send url and ..
+		urls <- string(item.url)
 
-		if isAlreadyDownloaded(item.url) {
-			continue
-		}
+		// .. wait for downloaded content
+		content := <-contents
 
-		printMsg("Downloader", fmt.Sprintf("Start    download '%s'", item.url))
-		downloadItem(item)
-		printMsg("Downloader", fmt.Sprintf("Finished download '%s'", item.url))
+		// Send filename and bytess and ..
+		fileName := item.folder + getFilename(item.url)
+		filenames <- fileName
+		bytess <- content
 
-		downloadedUrls[item.url] = true
+		// .. wait for file is saved
+		<-savedFilenames
 		downloaded <- item.url
-
 	}
 }
 
-func Timer(startTime time.Time, stopTime time.Time, startSignal chan<- bool, stopSignal chan<- bool) {
+func StartStopTimer(timeSlots <-chan TimeSlot, startSignals chan<- bool, stopSignals chan<- bool) {
 
-	// START
-	//
-	durationToStart := startTime.Sub(time.Now())
-	printMsg("Timer", fmt.Sprintf("Wait to start at '%v' in '%v' seconds", startTime, durationToStart))
-	time.Sleep(durationToStart)
+	starts := make(chan time.Time)
+	ends := make(chan time.Time)
 
-	printMsg("Timer", fmt.Sprintf("Send start '%v'", startTime))
-	startSignal <- true
+	go ctime.Timer(starts, startSignals)
+	go ctime.Timer(ends, stopSignals)
 
-	// STOP
-	//
-	durationToStop := stopTime.Sub(time.Now())
-	time.Sleep(durationToStop)
-	printMsg("Timer", fmt.Sprintf("Send stop '%v'", stopTime))
-
-	stopSignal <- true
+	for {
+		ts := <-timeSlots
+		starts <- ts.start
+		ends <- ts.end
+	}
 
 }
 
+/*
 func Terminator(quitRequest <-chan bool, itemsQueue <-chan DownloadItem, quit chan<- bool) {
 
 	shouldQuit := false
@@ -146,71 +173,46 @@ func Terminator(quitRequest <-chan bool, itemsQueue <-chan DownloadItem, quit ch
 	}
 
 }
+*/
 
 func main() {
+
+	dateFormat := "2006-01-02 15:04"
+	startDateStr := "2019-04-06 15:04"
+	startDateTime, err := time.Parse(dateFormat, startDateStr)
+	if err == nil {
+		fmt.Println(startDateTime)
+	}
 
 	//
 	// Channels
 	//
 	quit := make(chan bool)
 
-	quitRequest0 := make(chan bool)
-	quitRequest1 := make(chan bool)
-	quitRequest2 := make(chan bool)
-
-	startSignal := make(chan bool)
-	stopSignal := make(chan bool)
-
-	masterItems := make(chan DownloadItem)
-	mediaItems := make(chan DownloadItem)
-	segItemsQueue := make(chan DownloadItem, 100)
-	downloaded := make(chan m3u8URL, 100)
-
 	//
 	// Commands function of console
 	//
-	// urlMasterPlaylistOrf1 := m3u8URL("http://orf1.orfstg.cdn.ors.at/out/u/orf1/q6a/manifest.m3u8")
-	urlMasterPlaylistOrf2 := m3u8URL("http://orf2.orfstg.cdn.ors.at/out/u/orf2/q4a/manifest.m3u8")
 	dl := func() {
 
-		masterItems <- DownloadItem{url: urlMasterPlaylistOrf2, folder: "."}
-		start := time.Now().Add(5 * time.Second)
-		stop := time.Now().Add(15 * time.Second)
-
-		go Timer(start, stop, startSignal, stopSignal)
+		dlo := DownloadOrder{
+			channel: "orf2",
+			timeSlot: TimeSlot{
+				start: time.Now().Add(5 * time.Second),
+				end:   time.Now().Add(20 * time.Second),
+			},
+			folder: "./download/",
+		}
+		fmt.Println(dlo)
 
 	}
 	cmds := map[string]func(){
 		"quit": func() { quit <- true },
-		"qr":   func() { quitRequest0 <- true },
 		"dl":   func() { dl() },
 	}
 	go cell.Console(cmds) // stdout, stdin
-
-	//
-	// Setup network
-	//
-
-	go MediaGrapper(masterItems, mediaItems)
-	go boolean.Distributor(stopSignal, quitRequest1, quitRequest2)
-	go SegmentsGrapper(mediaItems, startSignal, quitRequest1, segItemsQueue)
-	go SegmentsDownloader(segItemsQueue, downloaded) // TODO: more worker e.g. 3
-	go Terminator(quitRequest2, segItemsQueue, quit)
 
 	// Wait until quit
 	//
 	<-quit
 	printMsg("Application", "Quit now!!")
 }
-
-// TODO: print to channel of console (stdout)
-
-//func Println(a ...interface{}) (n int, err error) {
-//	return Fprintln(os.Stdout, a...)
-//}
-
-//var (
-//	Stdin  = NewFile(uintptr(syscall.Stdin), "/dev/stdin")
-//	Stdout = NewFile(uintptr(syscall.Stdout), "/dev/stdout")
-//	Stderr = NewFile(uintptr(syscall.Stderr), "/dev/stderr")
-//)
