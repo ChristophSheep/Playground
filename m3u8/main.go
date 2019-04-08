@@ -54,8 +54,8 @@ func Grapper(orders <-chan DownloadOrder) {
 	masterPlaylists := make(chan m3u8.MasterPlaylist)
 	mediaPlaylists := make(chan m3u8.MediaPlaylist)
 
-	downloadItems := make(chan DownloadItem)
-	downloadedUrls := make(chan cm3u8.M3U8URL)
+	downloadItems := make(chan DownloadItem, 3)
+	downloadedUrls := make(chan cm3u8.M3U8URL, 3)
 
 	// Setup Network
 	//
@@ -84,9 +84,26 @@ func Grapper(orders <-chan DownloadOrder) {
 
 	// Wait for master playlist
 	masterPlaylist := <-masterPlaylists
-	mediaUrl := masterPlaylist.Variants[0].URI
+	mediaUrlStr := masterPlaylist.Variants[0].URI
 
-	mediaUrls <- makeAbsolute(baseUrl, cm3u8.M3U8URL(mediaUrl))
+	downloadSegments := func(mediaPlaylist m3u8.MediaPlaylist) {
+		for i := uint(0); i < mediaPlaylist.Count(); i++ { // TODO
+
+			mediaSegment := mediaPlaylist.Segments[i]
+			urlToDownload := makeAbsolute(baseUrl, cm3u8.M3U8URL(mediaSegment.URI))
+
+			_, present := downloadedItems[urlToDownload]
+			if present == false {
+				downloadedItems[urlToDownload] = false
+				downloadItems <- DownloadItem{
+					url:    urlToDownload,
+					folder: order.folder,
+				}
+			} else {
+				printMsg("Grapper", fmt.Sprintf("urlToDownload: %s already in list", urlToDownload))
+			}
+		}
+	}
 
 	// Wait for media playlist with segments
 	// Download segments until
@@ -94,23 +111,12 @@ func Grapper(orders <-chan DownloadOrder) {
 	//
 	go func() {
 		for {
+			mediaUrl := makeAbsolute(baseUrl, cm3u8.M3U8URL(mediaUrlStr))
+			printMsg("Grapper", fmt.Sprintf("send mediaUrl: %s", mediaUrl))
+			mediaUrls <- mediaUrl
 			mediaPlaylist := <-mediaPlaylists
-
-			for i := 0; i < 3; i++ {
-
-				mediaSegment := mediaPlaylist.Segments[i]
-
-				urlToDownload := makeAbsolute(baseUrl, cm3u8.M3U8URL(mediaSegment.URI))
-				downloadedItems[urlToDownload] = false
-
-				fmt.Println("i:", i, "urlToDownload:", urlToDownload)
-
-				// TODO: Check if url already queued !!!
-				downloadItems <- DownloadItem{
-					url:    urlToDownload,
-					folder: order.folder,
-				}
-			}
+			printMsg("Grapper", fmt.Sprintf("got playlist back for %s", mediaUrl))
+			downloadSegments(mediaPlaylist)
 		}
 	}()
 
@@ -119,7 +125,7 @@ func Grapper(orders <-chan DownloadOrder) {
 	go func() {
 		for {
 			downloadedUrl := <-downloadedUrls
-			fmt.Println("downloadedUrl:", downloadedUrl)
+			printMsg("Grapper", fmt.Sprintf("downloadedUrl: %s", downloadedUrl))
 			downloadedItems[downloadedUrl] = true
 		}
 	}()
@@ -127,8 +133,8 @@ func Grapper(orders <-chan DownloadOrder) {
 	// Stop
 	go func() {
 		select {
-		case stop := <-stopSignal:
-			fmt.Println("STOP signal was fired", stop)
+		case <-stopSignal:
+			printMsg("Grapper", "STOP signal was fired")
 		}
 	}()
 }
@@ -147,18 +153,18 @@ func Downloader(items <-chan DownloadItem, downloaded chan<- cm3u8.M3U8URL) {
 	for {
 		item := <-items
 
-		// Send url and ..
+		// Send url and ...
 		urls <- string(item.url)
 
-		// .. wait for downloaded content
+		// ... wait for downloaded content
 		content := <-contents
 
-		// Send filename and bytess and ..
+		// Send filename and bytess and ...
 		fileName := item.folder + getFilename(item.url)
 		filenames <- fileName
 		bytess <- content
 
-		// .. wait for file is saved
+		// ... wait for file is saved
 		<-savedFilenames
 		downloaded <- item.url
 	}
@@ -232,7 +238,7 @@ func main() {
 		dlo := DownloadOrder{
 			channel: "orf2",
 			timeSlot: TimeSlot{
-				start: time.Now().Add(5 * time.Second),
+				start: time.Now().Add(3 * time.Second),
 				end:   time.Now().Add(20 * time.Second),
 			},
 			folder: "./download/",

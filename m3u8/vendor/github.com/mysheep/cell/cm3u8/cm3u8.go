@@ -11,14 +11,14 @@ import (
 )
 
 // Master
-//  - Variant 0 quality, url, ...
+//  - Variant 0 (quality, url, ...)
 //  - Variant 1
 //  - Variant 2
 
 // Media
-//  - Segment 0 .ts
-//  - Segment 1 .ts
-//  - Segment 2 .ts
+//  - Segment 0.ts
+//  - Segment 1.ts
+//  - Segment 2.ts
 
 type M3U8URL string
 
