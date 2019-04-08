@@ -41,18 +41,21 @@ func MasterLoader(urls <-chan M3U8URL, masterPlayLists chan<- m3u8.MasterPlaylis
 }
 
 func MediaLoader(urls <-chan M3U8URL, mediaPlayLists chan<- m3u8.MediaPlaylist) {
-	m3u8Url := <-urls
 
-	pl, listType, err := getPlaylist(m3u8Url)
-	if err != nil {
-		panic(err)
+	for {
+
+		m3u8Url := <-urls
+
+		pl, listType, err := getPlaylist(m3u8Url)
+		if err != nil {
+			panic(err)
+		}
+
+		if listType == m3u8.MEDIA {
+			mediapl := pl.(*m3u8.MediaPlaylist)
+			mediaPlayLists <- *mediapl
+		}
 	}
-
-	if listType == m3u8.MEDIA {
-		mediapl := pl.(*m3u8.MediaPlaylist)
-		mediaPlayLists <- *mediapl
-	}
-
 }
 
 // getPlaylist get playlist from url master or media playlist

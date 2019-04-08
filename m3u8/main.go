@@ -92,6 +92,7 @@ func Grapper(orders <-chan DownloadOrder) {
 	mediaUrlStr := masterPlaylist.Variants[0].URI
 
 	downloadSegments := func(mediaPlaylist m3u8.MediaPlaylist) {
+
 		for i := uint(0); i < mediaPlaylist.Count(); i++ { // TODO
 
 			mediaSegment := mediaPlaylist.Segments[i]
@@ -105,7 +106,7 @@ func Grapper(orders <-chan DownloadOrder) {
 					folder: order.folder,
 				}
 			} else {
-				printMsg("Grapper", fmt.Sprintf("urlToDownload: %s already in list", urlToDownload))
+				printMsg("Grapper", fmt.Sprintf("Already in list - urlToDownload: %s ", urlToDownload))
 			}
 		}
 	}
@@ -122,6 +123,8 @@ func Grapper(orders <-chan DownloadOrder) {
 			mediaPlaylist := <-mediaPlaylists
 			printMsg("Grapper", fmt.Sprintf("got playlist back for %s", mediaUrl))
 			downloadSegments(mediaPlaylist)
+
+			time.Sleep(2 * time.Second)
 		}
 	}()
 
