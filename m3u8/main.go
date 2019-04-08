@@ -38,6 +38,11 @@ type DownloadOrder struct {
 	folder   string
 }
 
+type DownloadItem struct {
+	url    cm3u8.M3U8URL
+	folder string
+}
+
 func Grapper(orders <-chan DownloadOrder) {
 
 	// List of queued items (entry is there but false)
