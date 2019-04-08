@@ -38,50 +38,70 @@ type DownloadOrder struct {
 	folder   string
 }
 
-func Grapper(order DownloadOrder) {
-
-	masterUrls := make(chan cm3u8.M3U8URL)
-	mediaUrls := make(chan cm3u8.M3U8URL)
-	downloadedUrls := make(chan cm3u8.M3U8URL)
-
-	masterPlaylists := make(chan m3u8.MasterPlaylist)
-	mediaPlaylists := make(chan m3u8.MediaPlaylist)
-
-	downloadItems := make(chan DownloadItem)
-
-	timeSlots := make(chan TimeSlot)
-	startSignal := make(chan bool)
-	stopSignal := make(chan bool)
+func Grapper(orders <-chan DownloadOrder) {
 
 	// List of queued items (entry is there but false)
 	// and downloaded items (entry is there but true)
 	downloadedItems := map[cm3u8.M3U8URL]bool{}
 
+	// Setup Channels
+	timeSlots := make(chan TimeSlot)
+	startSignal := make(chan bool)
+	stopSignal := make(chan bool)
+
+	masterUrls := make(chan cm3u8.M3U8URL)
+	mediaUrls := make(chan cm3u8.M3U8URL)
+	masterPlaylists := make(chan m3u8.MasterPlaylist)
+	mediaPlaylists := make(chan m3u8.MediaPlaylist)
+
+	downloadItems := make(chan DownloadItem)
+	downloadedUrls := make(chan cm3u8.M3U8URL)
+
+	// Setup Network
+	//
 	go StartStopTimer(timeSlots, startSignal, stopSignal)
+
 	go cm3u8.MasterLoader(masterUrls, masterPlaylists)
 	go cm3u8.MediaLoader(mediaUrls, mediaPlaylists)
+
 	go Downloader(downloadItems, downloadedUrls)
+
+	// Get the order
+	//
+	order := <-orders
+
+	// Set timer
+	timeSlots <- order.timeSlot
 
 	// Wait for Start Signal ...
 	<-startSignal
 	// ... then insert url to network
-	masterUrls <- channels[order.channel]
+
+	masterUrl := channels[order.channel]
+	baseUrl := cm3u8.GetBaseUrl(masterUrl)
+
+	masterUrls <- masterUrl
 
 	// Wait for master playlist
 	masterPlaylist := <-masterPlaylists
 	mediaUrl := masterPlaylist.Variants[0].URI
-	mediaUrls <- cm3u8.M3U8URL(mediaUrl) // TODO: make absolute of relative url
+
+	mediaUrls <- makeAbsolute(baseUrl, cm3u8.M3U8URL(mediaUrl))
 
 	// Wait for media playlist with segments
 	// Download segmensts until stop signal is receive
 	go func() {
 		for {
 			mediaPlaylist := <-mediaPlaylists
-			for _, mediaSegment := range mediaPlaylist.Segments {
 
-				// TODO: make absolute of relative url
-				urlToDownload := cm3u8.M3U8URL(mediaSegment.URI)
+			for i := 0; i < 3; i++ {
+
+				mediaSegment := mediaPlaylist.Segments[i]
+
+				urlToDownload := makeAbsolute(baseUrl, cm3u8.M3U8URL(mediaSegment.URI))
 				downloadedItems[urlToDownload] = false
+
+				fmt.Println("i:", i, "urlToDownload:", urlToDownload)
 
 				// TODO: Check if url already queued !!!
 				downloadItems <- DownloadItem{
@@ -188,12 +208,15 @@ func main() {
 	// Channels
 	//
 	quit := make(chan bool)
+	orders := make(chan DownloadOrder)
 
 	//
 	// Commands function of console
 	//
 	dl := func() {
 
+		// Create an order
+		//
 		dlo := DownloadOrder{
 			channel: "orf2",
 			timeSlot: TimeSlot{
@@ -202,7 +225,10 @@ func main() {
 			},
 			folder: "./download/",
 		}
-		fmt.Println(dlo)
+
+		// Send order into network
+		//
+		orders <- dlo
 
 	}
 	cmds := map[string]func(){
@@ -210,6 +236,7 @@ func main() {
 		"dl":   func() { dl() },
 	}
 	go cell.Console(cmds) // stdout, stdin
+	go Grapper(orders)
 
 	// Wait until quit
 	//

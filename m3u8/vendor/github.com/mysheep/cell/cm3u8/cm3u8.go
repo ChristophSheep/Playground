@@ -75,7 +75,7 @@ func getPlaylist(m3u8Url M3U8URL) (m3u8.Playlist, m3u8.ListType, error) {
 //
 // e.g. http://server.com/file.ts is absolute url
 //      file.ts is a relative url
-func isRelativeUrl(urlRaw M3U8URL) bool {
+func IsRelativeUrl(urlRaw M3U8URL) bool {
 
 	url, err := url.Parse(string(urlRaw))
 	if err != nil {
@@ -88,7 +88,7 @@ func isRelativeUrl(urlRaw M3U8URL) bool {
 // getBaseUrl gets the base from with filename
 // e.g. from http://server.com/folder/file.txt
 //      get baseUrl -> http://server.com/folder/
-func getBaseUrl(urlRaw M3U8URL) M3U8URL {
+func GetBaseUrl(urlRaw M3U8URL) M3U8URL {
 
 	url, err := url.Parse(string(urlRaw))
 	if err != nil {

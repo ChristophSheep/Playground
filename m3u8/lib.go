@@ -27,6 +27,13 @@ func getFilename(urlRaw cm3u8.M3U8URL) string {
 	return path.Base(url.Path)
 }
 
+func makeAbsolute(base, url cm3u8.M3U8URL) cm3u8.M3U8URL {
+	if cm3u8.IsRelativeUrl(url) {
+		return base + url
+	}
+	return url
+}
+
 // isRelativeUrl checks if the url is
 //  - relativ or
 //  - absolute
