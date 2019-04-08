@@ -89,7 +89,9 @@ func Grapper(orders <-chan DownloadOrder) {
 	mediaUrls <- makeAbsolute(baseUrl, cm3u8.M3U8URL(mediaUrl))
 
 	// Wait for media playlist with segments
-	// Download segmensts until stop signal is receive
+	// Download segments until
+	// stop signal is received
+	//
 	go func() {
 		for {
 			mediaPlaylist := <-mediaPlaylists
@@ -112,11 +114,21 @@ func Grapper(orders <-chan DownloadOrder) {
 		}
 	}()
 
-	// Downloaded urls are mark in map as downloaded
+	// Downloaded urls are marked in map as downloaded
+	//
 	go func() {
 		for {
 			downloadedUrl := <-downloadedUrls
+			fmt.Println("downloadedUrl:", downloadedUrl)
 			downloadedItems[downloadedUrl] = true
+		}
+	}()
+
+	// Stop
+	go func() {
+		select {
+		case stop := <-stopSignal:
+			fmt.Println("STOP signal was fired", stop)
 		}
 	}()
 }
