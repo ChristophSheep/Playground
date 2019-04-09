@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/grafov/m3u8"
+	//"github.com/mysheep/cell/cm3u8"
 )
 
 // Master
@@ -95,6 +96,32 @@ func Switch(onOff <-chan bool, in <-chan M3U8URL, out chan<- M3U8URL) {
 		}
 	}
 
+}
+
+func SegmentsGrapper(mediaPlaylists <-chan m3u8.MediaPlaylist, mediaSegmentURIs chan<- M3U8URL) {
+	for {
+		mediaPlaylist := <-mediaPlaylists
+		for i := uint(0); i < mediaPlaylist.Count(); i++ {
+			mediaSegment := mediaPlaylist.Segments[i]
+			mediaSegmentURIs <- M3U8URL(mediaSegment.URI)
+		}
+	}
+}
+
+func Mapper(ins <-chan M3U8URL, outs chan<- M3U8URL, fn func(M3U8URL) M3U8URL) {
+	for {
+		val := <-ins
+		outs <- fn(val)
+	}
+}
+
+func Filter(ins <-chan M3U8URL, outs chan<- M3U8URL, fn func(M3U8URL) bool) {
+	for {
+		val := <-ins
+		if fn(val) {
+			outs <- val
+		}
+	}
 }
 
 // getPlaylist get playlist from url master or media playlist
