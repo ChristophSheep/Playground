@@ -111,30 +111,6 @@ func Grapper(orders <-chan DownloadOrder) {
 
 	stop := false
 
-	// Wait for media playlist with segments
-	// Download segments until stop signal is received
-	//
-	go func() {
-		for {
-
-			mediaUrl := makeAbsolute(baseUrl, cm3u8.M3U8URL(mediaUrlStr))
-			mediaUrls <- mediaUrl
-
-			mediaPlaylist := <-mediaPlaylists
-			downloadSegments(mediaPlaylist)
-
-			time.Sleep(time.Duration(mediaPlaylist.TargetDuration) * time.Second)
-
-			//
-			// TODO: Find out if last 3 segments are all downloaded
-			//
-			if stop {
-				break
-			}
-
-		}
-	}()
-
 	// Downloaded urls are marked in map as downloaded
 	//
 	go func() {
@@ -152,6 +128,38 @@ func Grapper(orders <-chan DownloadOrder) {
 		printMsg("Grapper", "STOP signal was fired. Set stop = true.")
 		stop = true
 	}()
+}
+
+func Controller(startSignal, stopSignal <-chan bool) {
+
+	intervalSec := 10
+	mediaPlaylistUrlsIn := make(chan cm3u8.M3U8URL)
+	mediaPlaylistUrlsOut := make(chan cm3u8.M3U8URL)
+	mediaPlaylistUrlsSwitched := make(chan cm3u8.M3U8URL)
+	mediaPlaylists := make(chan m3u8.MediaPlaylist)
+	onOffSignal := make(chan bool)
+
+	go func() {
+		select {
+		case <-startSignal:
+			onOffSignal <- true
+
+		case <-stopSignal:
+			onOffSignal <- false
+		}
+	}()
+
+	//
+	//                        on/off
+	//                          |
+	//     +----------+    +----v---+    +-------------+
+	// --->| Repeater |--->| Switch |--->| MediaLoader |--->
+	//     +----------+    +--------+    +-------------+
+	//
+
+	go cm3u8.Repeater(intervalSec, mediaPlaylistUrlsIn, mediaPlaylistUrlsOut)
+	go cm3u8.Switch(onOffSignal, mediaPlaylistUrlsOut, mediaPlaylistUrlsSwitched)
+	go cm3u8.MediaLoader(mediaPlaylistUrlsSwitched, mediaPlaylists)
 }
 
 func main() {

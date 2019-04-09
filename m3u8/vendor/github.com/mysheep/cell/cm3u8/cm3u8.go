@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 
 	"github.com/grafov/m3u8"
 )
@@ -56,6 +57,44 @@ func MediaLoader(urls <-chan M3U8URL, mediaPlayLists chan<- m3u8.MediaPlaylist) 
 			mediaPlayLists <- *mediapl
 		}
 	}
+}
+
+func Repeater(interval int, in <-chan M3U8URL, out chan<- M3U8URL) {
+
+	val := M3U8URL("")
+	valIsSet := false
+
+	go func() {
+		for {
+			val = <-in
+			valIsSet = true
+		}
+	}()
+
+	for {
+		time.Sleep(time.Duration(interval) * time.Second)
+		if valIsSet {
+			out <- val
+		}
+	}
+}
+
+func Switch(onOff <-chan bool, in <-chan M3U8URL, out chan<- M3U8URL) {
+
+	on := false
+	go func() {
+		for {
+			on = <-onOff // wait for signal
+		}
+	}()
+
+	for {
+		val := <-in
+		if on {
+			out <- val
+		}
+	}
+
 }
 
 // getPlaylist get playlist from url master or media playlist
