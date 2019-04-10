@@ -43,123 +43,121 @@ type DownloadItem struct {
 
 func Grapper(orders <-chan DownloadOrder) {
 
-	// List of queued items (entry is there but false)
-	// and downloaded items (entry is there but true)
-	downloadedItems := map[cm3u8.M3U8URL]bool{}
-
-	// Setup Channels
 	timeSlots := make(chan TimeSlot)
 	startSignal := make(chan bool)
 	stopSignal := make(chan bool)
 
 	masterUrls := make(chan cm3u8.M3U8URL)
-	mediaUrls := make(chan cm3u8.M3U8URL)
 	masterPlaylists := make(chan m3u8.MasterPlaylist)
-	mediaPlaylists := make(chan m3u8.MediaPlaylist)
-
-	downloadItems := make(chan DownloadItem, 3)
-	downloadedUrls := make(chan cm3u8.M3U8URL, 3)
+	mediaPlaylistUrls := make(chan cm3u8.M3U8URL)
 
 	// Setup Network
 	//
 	go StartStopTimer(timeSlots, startSignal, stopSignal)
-
 	go cm3u8.MasterLoader(masterUrls, masterPlaylists)
-	go cm3u8.MediaLoader(mediaUrls, mediaPlaylists)
-
-	go Downloader(downloadItems, downloadedUrls)
+	go Controller(mediaPlaylistUrls, startSignal, stopSignal)
 
 	// Get the order
 	//
-	order := <-orders
-
-	// Set timer
-	timeSlots <- order.timeSlot
-
-	// Wait for Start Signal ...
-	<-startSignal
-	// ... then insert url to network
-
-	masterUrl := channels[order.channel]
-	baseUrl := cm3u8.GetBaseUrl(masterUrl)
-
-	masterUrls <- masterUrl
-
-	// Wait for master playlist
-	masterPlaylist := <-masterPlaylists
-	mediaUrlStr := masterPlaylist.Variants[0].URI
-
-	downloadSegments := func(mediaPlaylist m3u8.MediaPlaylist) {
-
-		for i := uint(0); i < mediaPlaylist.Count(); i++ { // TODO
-
-			mediaSegment := mediaPlaylist.Segments[i]
-			urlToDownload := makeAbsolute(baseUrl, cm3u8.M3U8URL(mediaSegment.URI))
-
-			_, present := downloadedItems[urlToDownload]
-			if present == false {
-				downloadedItems[urlToDownload] = false
-				downloadItems <- DownloadItem{
-					url:    urlToDownload,
-					folder: order.folder,
-				}
-			} else {
-				printMsg("Grapper", fmt.Sprintf("Already in list - urlToDownload: %s ", urlToDownload))
-			}
-		}
+	for {
+		order := <-orders // Channel, time, folder
+		printMsg("Grapper", fmt.Sprintf("order: %v", order))
+		masterUrl := channels[order.channel]
+		baseUrl := cm3u8.GetBaseUrl(masterUrl)
+		printMsg("Grapper", fmt.Sprintf("masterUrl: %s", masterUrl))
+		masterUrls <- masterUrl
+		// wait for
+		masterPlaylist := <-masterPlaylists
+		mediaPlaylistUrl := cm3u8.M3U8URL(masterPlaylist.Variants[0].URI) // TODO CHeck
+		mediaPlaylistUrl = makeAbsolute(baseUrl, mediaPlaylistUrl)
+		printMsg("Grapper", fmt.Sprintf("mediaPlaylistUrl: %v", mediaPlaylistUrl))
+		mediaPlaylistUrls <- mediaPlaylistUrl
 	}
-
-	stop := false
-
-	// Downloaded urls are marked in map as downloaded
-	//
-	go func() {
-		for {
-			downloadedUrl := <-downloadedUrls
-			printMsg("Grapper", fmt.Sprintf("downloadedUrl: %s", downloadedUrl))
-			downloadedItems[downloadedUrl] = true
-		}
-	}()
-
-	// Wait for Stop Signal
-	//
-	go func() {
-		<-stopSignal
-		printMsg("Grapper", "STOP signal was fired. Set stop = true.")
-		stop = true
-	}()
 }
 
-func Controller(startSignal, stopSignal <-chan bool) {
+func Controller(mediaPlaylistUrls <-chan cm3u8.M3U8URL, startSignal, stopSignal <-chan bool) {
 
-	intervalSec := 10
+	intervalSec := 10 // TODO: Interval from mediaPlayList
+	baseUrl := cm3u8.M3U8URL("")
+	onOffSignal := make(chan bool)
+
 	mediaPlaylistUrlsIn := make(chan cm3u8.M3U8URL)
 	mediaPlaylistUrlsOut := make(chan cm3u8.M3U8URL)
 	mediaPlaylistUrlsSwitched := make(chan cm3u8.M3U8URL)
 	mediaPlaylists := make(chan m3u8.MediaPlaylist)
-	onOffSignal := make(chan bool)
+	mediaSegmentsUris := make(chan cm3u8.M3U8URL)
+
+	urlsToDownload := make(chan cm3u8.M3U8URL, 100)
+	urlsNotAlreadyDownloaded := make(chan cm3u8.M3U8URL, 100)
+	downloadedUrls := make(chan cm3u8.M3U8URL, 100)
+	downloadItems := make(chan DownloadItem, 100)
 
 	go func() {
 		select {
 		case <-startSignal:
+			printMsg("Controller", "START signal fired")
 			onOffSignal <- true
 
 		case <-stopSignal:
+			printMsg("Controller", "STOP signal fired")
 			onOffSignal <- false
 		}
 	}()
 
 	//
-	//       interval         on/off
-	//          |               |
-	//     +----v-----+    +----v---+    +-------------+
-	// --->| Repeater |--->| Switch |--->| MediaLoader |--->
-	//     +----------+    +--------+    +-------------+
+	//        interval         on/off
+	//           |               |
+	//  url +----v-----+    +----v---+    +-------------+    +-------------+
+	//  --->| Repeater |--->| Switch |--->| MediaLoader |--->| SegsGrapper |--->
+	//      +----------+    +--------+    +-------------+    +-------------+
 	//
+	//      +--------+    +-----------+
+	//  --->| absUrl |--->| FilterDLD |--->
+	//      +--------+    +-----------+
 
 	go cm3u8.Repeater(intervalSec, mediaPlaylistUrlsIn, mediaPlaylistUrlsOut)
 	go cm3u8.Switch(onOffSignal, mediaPlaylistUrlsOut, mediaPlaylistUrlsSwitched)
+	// TODO: MAPPER
 	go cm3u8.MediaLoader(mediaPlaylistUrlsSwitched, mediaPlaylists)
+	// TODO: MAPPER
+	go cm3u8.SegmentsGrapper(mediaPlaylists, mediaSegmentsUris)
+
+	// Make Absolute (MAP)
+	//
+	absUrlFn := func(url cm3u8.M3U8URL) cm3u8.M3U8URL {
+		return makeAbsolute(baseUrl, cm3u8.M3U8URL(url))
+	}
+	go cm3u8.Mapper(mediaSegmentsUris, urlsToDownload, absUrlFn)
+
+	// Filter away already downloaded urls or queued urls (FILTER)
+	//
+	downloadedUrlsMap := map[cm3u8.M3U8URL]bool{}
+	filterFn := func(url cm3u8.M3U8URL) bool {
+		_, present := downloadedUrlsMap[url]
+		return present
+	}
+	go cm3u8.Filter(urlsToDownload, urlsNotAlreadyDownloaded, filterFn)
+	go Downloader(downloadItems, downloadedUrls)
+
+	go func() {
+		url := <-urlsNotAlreadyDownloaded
+		newItem := DownloadItem{
+			url:    url,
+			folder: "./download/",
+		}
+		downloadItems <- newItem
+	}()
+
+	go func() {
+		url := <-downloadedUrls
+		downloadedUrlsMap[url] = true
+	}()
+
+	for {
+		url := <-mediaPlaylistUrls
+		baseUrl = cm3u8.GetBaseUrl(url)
+		mediaPlaylistUrlsIn <- url
+	}
 }
 
 func main() {
