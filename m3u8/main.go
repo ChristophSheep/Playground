@@ -134,33 +134,40 @@ func Controller(mediaPlaylistUrls <-chan cm3u8.M3U8URL, startSignal, stopSignal 
 		return (present == false) // if not in map then download, let it pass through filter
 	}
 	go cm3u8.Filter(urlsToDownload, urlsNotAlreadyDownloaded, filterFn)
+
+	go func() {
+		for {
+			url := <-urlsNotAlreadyDownloaded
+			fmt.Println("DownloadItems creator", "-", "url:", url)
+			newItem := DownloadItem{
+				url:    url,
+				folder: "./download/",
+			}
+			downloadItems <- newItem
+		}
+	}()
+
 	go Downloader(downloadItems, downloadedUrls)
 
 	go func() {
-		url := <-urlsNotAlreadyDownloaded
-		fmt.Println("DownloadItems creator", "-", "url:", url)
-		newItem := DownloadItem{
-			url:    url,
-			folder: "./download/",
+		for {
+			url := <-downloadedUrls
+			fmt.Println("Downloaded Items", "-", "url:", url)
+			downloadedUrlsMap[url] = true
 		}
-		downloadItems <- newItem
 	}()
 
 	go func() {
-		url := <-downloadedUrls
-		fmt.Println("Downloaded Items", "-", "url:", url)
-		downloadedUrlsMap[url] = true
-	}()
+		for {
+			select {
+			case <-startSignal:
+				printMsg("Controller", "START signal fired")
+				onOffSignal <- true
 
-	go func() {
-		select {
-		case <-startSignal:
-			printMsg("Controller", "START signal fired")
-			onOffSignal <- true
-
-		case <-stopSignal:
-			printMsg("Controller", "STOP signal fired")
-			onOffSignal <- false
+			case <-stopSignal:
+				printMsg("Controller", "STOP signal fired")
+				onOffSignal <- false
+			}
 		}
 	}()
 
