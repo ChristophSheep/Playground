@@ -2,6 +2,7 @@ package cm3u8
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -47,6 +48,7 @@ func MediaLoader(urls <-chan M3U8URL, mediaPlayLists chan<- m3u8.MediaPlaylist) 
 	for {
 
 		m3u8Url := <-urls
+		fmt.Println("MediaLoader", "-", "m3u8Url:", m3u8Url)
 
 		pl, listType, err := getPlaylist(m3u8Url)
 		if err != nil {
@@ -74,25 +76,29 @@ func Repeater(interval int, in <-chan M3U8URL, out chan<- M3U8URL) {
 
 	for {
 		time.Sleep(time.Duration(interval) * time.Second)
+		fmt.Println("Repeater", "-", "interval:", interval)
 		if valIsSet {
+			fmt.Println("Repeater", "-", "send val:", val)
 			out <- val
 		}
 	}
 }
 
-func Switch(onOff <-chan bool, in <-chan M3U8URL, out chan<- M3U8URL) {
+func Switch(onOffs <-chan bool, ins <-chan M3U8URL, outs chan<- M3U8URL) {
 
-	on := false
+	onOff := false
 	go func() {
 		for {
-			on = <-onOff // wait for signal
+			onOff = <-onOffs // wait for signal
+			fmt.Println("Switch", "-", "onOff:", onOff)
 		}
 	}()
 
 	for {
-		val := <-in
-		if on {
-			out <- val
+		val := <-ins
+		if onOff {
+			outs <- val
+			fmt.Println("Switch", "-", "val:", val)
 		}
 	}
 
@@ -101,8 +107,10 @@ func Switch(onOff <-chan bool, in <-chan M3U8URL, out chan<- M3U8URL) {
 func SegmentsGrapper(mediaPlaylists <-chan m3u8.MediaPlaylist, mediaSegmentURIs chan<- M3U8URL) {
 	for {
 		mediaPlaylist := <-mediaPlaylists
+		fmt.Println("SegmentsGrapper", "-", "mediaPlaylist count:", mediaPlaylist.Count())
 		for i := uint(0); i < mediaPlaylist.Count(); i++ {
 			mediaSegment := mediaPlaylist.Segments[i]
+			fmt.Println("SegmentsGrapper", "-", "mediaPlaylist segement i:", i, " uri:", mediaSegment.URI)
 			mediaSegmentURIs <- M3U8URL(mediaSegment.URI)
 		}
 	}
@@ -119,6 +127,7 @@ func Filter(ins <-chan M3U8URL, outs chan<- M3U8URL, fn func(M3U8URL) bool) {
 	for {
 		val := <-ins
 		if fn(val) {
+			fmt.Println("Filter", "-", "url send out:", val)
 			outs <- val
 		}
 	}
