@@ -150,9 +150,9 @@ func Controller(startSignal, stopSignal <-chan bool) {
 	}()
 
 	//
-	//                        on/off
-	//                          |
-	//     +----------+    +----v---+    +-------------+
+	//       interval         on/off
+	//          |               |
+	//     +----v-----+    +----v---+    +-------------+
 	// --->| Repeater |--->| Switch |--->| MediaLoader |--->
 	//     +----------+    +--------+    +-------------+
 	//
