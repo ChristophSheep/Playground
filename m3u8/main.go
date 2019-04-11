@@ -179,11 +179,6 @@ func Controller(mediaPlaylistUrls <-chan cm3u8.M3U8URL, startSignal, stopSignal 
 	}
 }
 
-// download what?
-//  - channel ?
-//  - when ?
-//  - to folder ?
-
 func main() {
 
 	//
@@ -214,11 +209,16 @@ func main() {
 
 	}
 
+	// download what?
+	//  - channel ?
+	//  - when? start, end
+	//  - to folder ?
+
 	dlWhat := func() {
 
 		channel := getString("Which channel?")
-		startTime := getDateTime("Which start time?")
-		endTime := getDateTime("Which end time?")
+		startTimeUTC := getDateTimeLocal("Which start time?").UTC()
+		endTimeUTC := getDateTimeLocal("Which end time?").UTC()
 		folder := getString("Which folder?")
 
 		// Check
@@ -229,8 +229,8 @@ func main() {
 		dlo := DownloadOrder{
 			channel: channel,
 			timeSlot: TimeSlot{
-				start: startTime,
-				end:   endTime,
+				start: startTimeUTC,
+				end:   endTimeUTC,
 			},
 			folder: folder,
 		}

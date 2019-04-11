@@ -40,7 +40,7 @@ func getString(question string) string {
 	return result
 }
 
-func getDateTime(question string) time.Time {
+func getDateTimeLocal(question string) time.Time {
 	dateTimeStr := getString(question)
 
 	loc, err := time.LoadLocation(countryTz["Vienna"])
