@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net/url"
+	"os"
 	"path"
 	"time"
 
@@ -11,8 +13,46 @@ import (
 	"github.com/mysheep/cell/web"
 )
 
+const (
+	dateFormat = "2006-01-02 15:04"
+)
+
+// see https://stackoverflow.com/questions/25318154/convert-utc-to-local-time-go
+
+var countryTz = map[string]string{
+	"Vienna": "Europe/Vienna",
+	// ...
+}
+
 func printMsg(object string, msg string) {
 	fmt.Printf("%25s - %s\n", object, msg)
+}
+
+func getString(question string) string {
+	var result string
+	fmt.Print(question)
+	fmt.Print(" ")
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		result = scanner.Text()
+
+	}
+	return result
+}
+
+func getDateTime(question string) time.Time {
+	dateTimeStr := getString(question)
+
+	loc, err := time.LoadLocation(countryTz["Vienna"])
+	if err != nil {
+		panic(err)
+	}
+
+	result, err := time.ParseInLocation(dateFormat, dateTimeStr, loc)
+	if err != nil {
+		fmt.Println("Error: ", err)
+	}
+	return result
 }
 
 func getFilename(urlRaw cm3u8.M3U8URL) string {
