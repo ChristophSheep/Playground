@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/mysheep/cell/cm3u8"
@@ -22,6 +23,67 @@ const (
 var countryTz = map[string]string{
 	"Vienna": "Europe/Vienna",
 	// ...
+}
+
+func validate(do DownloadOrder) bool {
+
+	validateChannel := func() bool {
+		chs := getKeys(channels)
+		fmt.Println("chs:", chs)
+		if stringInSlice(do.channel, chs) == false {
+			printMsg("Validater", "channel '"+do.channel+"' not in list!")
+			return false
+		}
+		return true
+	}
+
+	validateTimeSlot := func() bool {
+		if do.timeSlot.start.Sub(do.timeSlot.end) > 0 {
+			printMsg("Validater", "start time > end time!")
+			return false
+		}
+		return true
+	}
+
+	validateFolder := func() bool {
+		fileInfo, err := os.Stat(do.folder)
+
+		if err != nil {
+			printMsg("Validater", "folder '"+do.folder+"' is not a path!")
+			return false
+		}
+
+		if fileInfo.IsDir() == false {
+			printMsg("Validater", "folder '"+do.folder+"' is not a directory!")
+			return false
+		}
+		return true
+	}
+
+	return validateChannel() && validateTimeSlot() && validateFolder()
+
+}
+
+func getChannelList() string {
+	keys := getKeys(channels)
+	return "(" + strings.Join(keys, ", ") + ")"
+}
+
+func getKeys(channels map[string]cm3u8.M3U8URL) []string {
+	keys := make([]string, 0, len(channels))
+	for k, _ := range channels {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
 
 func printMsg(object string, msg string) {
@@ -88,6 +150,7 @@ func StartStopTimer(timeSlots <-chan TimeSlot, startSignals chan<- bool, stopSig
 
 }
 
+// TODO
 func Downloader(items <-chan DownloadItem, downloaded chan<- cm3u8.M3U8URL) {
 
 	urls := make(chan string)
