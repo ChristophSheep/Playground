@@ -21,30 +21,6 @@ var (
 	}
 )
 
-type TimeSlot struct {
-	start time.Time
-	end   time.Time
-}
-
-func (ts TimeSlot) String() string {
-	return fmt.Sprintf("{start:'%v', end:'%v'}", ts.start, ts.end)
-}
-
-type DownloadOrder struct {
-	channel  string
-	timeSlot TimeSlot
-	folder   string
-}
-
-func (do DownloadOrder) String() string {
-	return fmt.Sprintf("{channel:'%v', time:%v, folder:'%v'}", do.channel, do.timeSlot, do.folder)
-}
-
-type DownloadItem struct {
-	url    cm3u8.M3U8URL
-	folder string
-}
-
 func Grapper(orders <-chan DownloadOrder) {
 
 	timeSlots := make(chan TimeSlot)
@@ -75,6 +51,7 @@ func Grapper(orders <-chan DownloadOrder) {
 		counter := 0
 		maxTries := 10
 
+		// TODO: Refactor - Try x times with condition
 		for {
 
 			printMsg("Grapper", fmt.Sprintf("masterUrl: %s", masterUrl))
@@ -249,7 +226,7 @@ func main() {
 	//  - when? start, end
 	//  - to folder ?
 
-	dlWhat := func() {
+	dlw := func() {
 
 		channel := getString("Which channel" + getChannelList() + "?")
 		startTimeUTC := getDateTimeLocal("Which start time?").UTC()
@@ -283,7 +260,7 @@ func main() {
 	cmds := map[string]func(){
 		"quit": func() { quit <- true },
 		"dl":   func() { dl() },
-		"dlw":  func() { dlWhat() },
+		"dlw":  func() { dlw() },
 	}
 	go cell.Console(cmds) // stdout, stdin
 	go Grapper(orders)
