@@ -1,0 +1,9 @@
+#EXTM3U
+#EXT-X-ALLOW-CACHE:NO
+#EXT-X-VERSION:3
+#EXT-X-TARGETDURATION:11
+#EXT-X-MEDIA-SEQUENCE:0
+#EXTINF:10.031,
+https://varorfvod.sf.apa.at/system_clips/livestream_Q6A.mp4/media_0.ts?lbs=20190412073547093&ip=217.149.167.222&ua=Go-http-client%252f1.1
+#EXT-X-ENDLIST
+

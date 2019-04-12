@@ -1,0 +1,8 @@
+-> Master
+http://orf1.orfstg.cdn.ors.at/out/u/orf1/q6a/manifest.m3u8
+
+-> Media
+https://apasfiis.sf.apa.at/ipad/gp/livestream_Q6A.mp4/chunklist.m3u8?lbs=20190412073547093&origin=http%253a%252f%252fvarorfvod.sf.apa.at%252fsystem_clips%252flivestream_Q6A.mp4%252fchunklist.m3u8&ip=217.149.167.222&ua=Go-http-client%252f1.1
+
+-> Segments
+https://varorfvod.sf.apa.at/system_clips/livestream_Q6A.mp4/media_0.ts?lbs=20190412073547093&ip=217.149.167.222&ua=Go-http-client%252f1.1
