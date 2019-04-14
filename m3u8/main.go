@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -11,7 +12,8 @@ import (
 )
 
 const (
-	DEBUG = false
+	DEBUG          = false
+	downloadFolder = "./download/"
 )
 
 var (
@@ -26,76 +28,47 @@ func Grapper(orders <-chan DownloadOrder) {
 	timeSlots := make(chan TimeSlot)
 	startSignal := make(chan bool)
 	stopSignal := make(chan bool)
+	folders := make(chan string)
 
 	masterUrls := make(chan cm3u8.M3U8URL)
-	masterPlaylists := make(chan m3u8.MasterPlaylist)
-	mediaPlaylistUrls := make(chan cm3u8.M3U8URL)
 
 	// Setup Network
 	//
 	go StartStopTimer(timeSlots, startSignal, stopSignal)
-	go cm3u8.MasterLoader(masterUrls, masterPlaylists)
-	go MediaLoaderSlidingWindow(mediaPlaylistUrls, startSignal, stopSignal)
+	go MediaLoaderSlidingWindow(masterUrls, startSignal, stopSignal, folders)
 
 	// Get the order
 	//
 	for {
 
 		order := <-orders
-
 		printMsg("Grapper", fmt.Sprint("order: ", order))
 		masterUrl := channels[order.channel]
-		baseUrl := cm3u8.GetBaseUrl(masterUrl)
+		printMsg("Grapper", fmt.Sprintf("masterUrl: %s", masterUrl))
 
-		mediaPlaylistUrl := cm3u8.M3U8URL("")
-		counter := 0
-		maxTries := 10
-
-		// TODO: Refactor - Try x times with condition
-		for {
-
-			printMsg("Grapper", fmt.Sprintf("masterUrl: %s", masterUrl))
-
-			// Set master url to download ..
-			masterUrls <- masterUrl
-			// .. and wait for masterPlaylist
-			masterPlaylist := <-masterPlaylists
-
-			mediaPlaylistUrl = cm3u8.M3U8URL(masterPlaylist.Variants[0].URI) // TODO CHeck
-			mediaPlaylistUrl = makeAbsolute(baseUrl, mediaPlaylistUrl)
-
-			// https://apasfiis.sf.apa.at/ipad/gp/livestream_Q6A.mp4/chunklist.m3u8?lbs=20190412132743573&origin=http%253a%252f%252fvarorfvod.sf.apa.at%252fsystem_clips%252flivestream_Q6A.mp4%252fchunklist.m3u8&ip=129.27.216.70&ua=Go-http-client%252f1.1
-
-			if counter > 10 {
-				break
-			}
-
-			if strings.Contains(string(mediaPlaylistUrl), "chunklist.m3u8") == false {
-				break
-			} else {
-				printMsg("Grapper", "media play list url is chunklist, assume live stream has not already started. Try in 1 minute. "+fmt.Sprintf("%v", maxTries-counter))
-				time.Sleep(1 * time.Minute)
-			}
-
-			counter++
-		}
-
-		printMsg("Grapper", fmt.Sprintf("mediaPlaylistUrl: %v", mediaPlaylistUrl))
-		mediaPlaylistUrls <- mediaPlaylistUrl
-
+		// Set master url to download ..
+		masterUrls <- masterUrl
+		folders <- order.folder
 		// Set timeslot
 		timeSlots <- order.timeSlot
 	}
 }
 
-func MediaLoaderSlidingWindow(mediaPlaylistUrls <-chan cm3u8.M3U8URL, startSignal, stopSignal <-chan bool) {
+func MediaLoaderSlidingWindow(masterUrlsIn <-chan cm3u8.M3U8URL, startSignal, stopSignal <-chan bool, folders <-chan string) {
 
 	intervalSec := uint(10) // TODO: Interval from mediaPlayList
 	baseUrl := cm3u8.M3U8URL("")
 	onOffSignal := make(chan bool)
 
-	mediaPlaylistUrlsIn := make(chan cm3u8.M3U8URL)
-	mediaPlaylistUrlsOut := make(chan cm3u8.M3U8URL)
+	// Repeater
+	masterPlaylistUrlsIn := make(chan cm3u8.M3U8URL)
+	masterPlaylistUrlsRepeated := make(chan cm3u8.M3U8URL)
+
+	// MasterPlayListLoader
+	masterPlaylists := make(chan m3u8.MasterPlaylist)
+
+	mediaPlaylistUrls := make(chan cm3u8.M3U8URL)
+
 	mediaPlaylistUrlsSwitched := make(chan cm3u8.M3U8URL)
 	mediaPlaylists := make(chan m3u8.MediaPlaylist)
 	mediaSegmentsUris := make(chan cm3u8.M3U8URL)
@@ -105,24 +78,62 @@ func MediaLoaderSlidingWindow(mediaPlaylistUrls <-chan cm3u8.M3U8URL, startSigna
 	downloadedUrls := make(chan cm3u8.M3U8URL, 100)
 	downloadItems := make(chan DownloadItem, 100)
 
-	//          interval         on/off
-	// +---------------------------------------------------------------------------
-	// |            |               |
-	// |   url +----v-----+    +----v---+    +-------------+    +-------------+
-	// |   --->| Repeater |--->| Switch |--->| MediaLoader |--->| SegsGrapper |--->
-	// |       +----------+    +--------+    +-------------+    +-------------+
-	// |
-	// |           +--------+    +-----------+
-	// |       --->| absUrl |--->| FilterDLD |--->
-	// |           +--------+    +-----------+
-	// |
-	// +----------------------------------------------------------------------------
+	folder := downloadFolder // Default ./download/
+	go func() {
+		folder = <-folders
+	}()
 
-	go cm3u8.Repeater(intervalSec, mediaPlaylistUrlsIn, mediaPlaylistUrlsOut)
-	go cm3u8.Switch(onOffSignal, mediaPlaylistUrlsOut, mediaPlaylistUrlsSwitched)
-	// TODO: MAPPER
+	//  folder     interval                       on/off
+	//     |         |                              |
+	//  +--+---------+------------------------------+-------------------------------+
+	//  |            |                              |                               |
+	//  |   url +----v-----+   +-----------+   +----v---+   +----------+ 		    |
+	// -+------>| Repeater |-->| MasterLdr |-->| Switch |-->| MediaLdr |--> ...     |
+	//  |       +----------+   +-----------+   +--------+   +----------+            |
+	//  |																		    |
+	//  |          +------------+   +--------+   +-----------+   +------------+     |
+	//  |   ... -->|SegsGrapper |-->| absUrl |-->| FilterDLD |-->| Downloader |-->  |
+	//  |          +------------+   +--------+   +-----------+   +------------+     |
+	//  | 																		    |
+	//  +---------------------------------------------------------------------------+
+	//
+
+	go cm3u8.Repeater(intervalSec, masterPlaylistUrlsIn, masterPlaylistUrlsRepeated)
+	go cm3u8.MasterLoader(masterPlaylistUrlsRepeated, masterPlaylists)
+
+	go func() {
+
+		getMediaPlayListUrl := func(masterPlaylist m3u8.MasterPlaylist) (cm3u8.M3U8URL, error) {
+
+			// TODO: Take first variant or ??
+			//
+			mediaPlaylistUrl := cm3u8.M3U8URL(masterPlaylist.Variants[0].URI)
+			mediaPlaylistUrl = makeAbsolute(baseUrl, mediaPlaylistUrl)
+
+			// https://apasfiis.sf.apa.at/ipad/gp/livestream_Q6A.mp4/chunklist.m3u8?lbs=20190412132743573&origin=http%253a%252f%252fvarorfvod.sf.apa.at%252fsystem_clips%252flivestream_Q6A.mp4%252fchunklist.m3u8&ip=129.27.216.70&ua=Go-http-client%252f1.1
+
+			if strings.Contains(string(mediaPlaylistUrl), "chunklist.m3u8") {
+				return cm3u8.M3U8URL(""), errors.New("Media play list is chunklist")
+			}
+
+			return mediaPlaylistUrl, nil
+		}
+
+		for {
+			masterPlaylist := <-masterPlaylists // from Repeater
+
+			mediaPlaylistUrl, err := getMediaPlayListUrl(masterPlaylist)
+			if err == nil {
+				//printMsg("Grapper", fmt.Sprintf("mediaPlaylistUrl: %v", mediaPlaylistUrl))
+				mediaPlaylistUrls <- mediaPlaylistUrl
+			} else {
+				printMsg("Grapper", "It seams no livestream aavailable!")
+			}
+		}
+	}()
+
+	go cm3u8.Switch(onOffSignal, mediaPlaylistUrls, mediaPlaylistUrlsSwitched)
 	go cm3u8.MediaLoader(mediaPlaylistUrlsSwitched, mediaPlaylists)
-	// TODO: MAPPER
 	go cm3u8.SegmentsGrapper(mediaPlaylists, mediaSegmentsUris)
 
 	// Make Absolute (MAP)
@@ -140,8 +151,8 @@ func MediaLoaderSlidingWindow(mediaPlaylistUrls <-chan cm3u8.M3U8URL, startSigna
 	filterFn := func(url cm3u8.M3U8URL) bool {
 		_, present := downloadedUrlsMap[url]
 
-		msg := fmt.Sprint("Filter", "-", "url:", url, "present:", present)
-		printMsg("Controller", msg)
+		//msg := fmt.Sprint("Filter", "-", "url:", url, "present:", present)
+		//printMsg("Controller", msg)
 
 		return (present == false) // if not in map then download, let it pass through filter
 	}
@@ -153,7 +164,7 @@ func MediaLoaderSlidingWindow(mediaPlaylistUrls <-chan cm3u8.M3U8URL, startSigna
 			//fmt.Println("DownloadItems creator", "-", "url:", url)
 			newItem := DownloadItem{
 				url:    url,
-				folder: "./download/",
+				folder: folder,
 			}
 			downloadItems <- newItem
 		}
@@ -164,7 +175,7 @@ func MediaLoaderSlidingWindow(mediaPlaylistUrls <-chan cm3u8.M3U8URL, startSigna
 	go func() {
 		for {
 			url := <-downloadedUrls
-			msg := fmt.Sprint("Downloaded Items", "-", "url:", url)
+			msg := fmt.Sprint("Downloaded item:", getFilename(url))
 			printMsg("Controller", msg)
 			downloadedUrlsMap[url] = true
 		}
@@ -185,9 +196,9 @@ func MediaLoaderSlidingWindow(mediaPlaylistUrls <-chan cm3u8.M3U8URL, startSigna
 	}()
 
 	for {
-		url := <-mediaPlaylistUrls
-		baseUrl = cm3u8.GetBaseUrl(url)
-		mediaPlaylistUrlsIn <- url
+		masterUrl := <-masterUrlsIn
+		baseUrl = cm3u8.GetBaseUrl(masterUrl)
+		masterPlaylistUrlsIn <- masterUrl // send to Repeater
 	}
 }
 
@@ -226,37 +237,39 @@ func main() {
 	//  - when? start, end
 	//  - to folder ?
 
+	// dlw is short cut for download what?
+	// it ask the user for channel, start and end time
+	// and folder to save the live stream files
 	dlw := func() {
 
-		channel := getString("Which channel" + getChannelList() + "?")
-		startTimeUTC := getDateTimeLocal("Which start time?").UTC()
-		endTimeUTC := getDateTimeLocal("Which end time?").UTC()
-		folder := getString("Which folder?")
+		channel := getString("Which channel " + getChannelList() + " ?")
+		startTimeUTC := getDateTimeLocal("Which start time (eg. 2019-04-04 12:00) ?").UTC()
+		endTimeUTC := getDateTimeLocal("Which   end time (eg. 2019-04-04 12:00) ?").UTC()
+		folder := getString("Which folder ?")
 
 		// Check
 		// - Channel exists
 		// - EndTime > StartTime
 		// - Check folder exists else create it
 
-		dlo := DownloadOrder{
-			channel: channel,
-			timeSlot: TimeSlot{
-				start: startTimeUTC,
-				end:   endTimeUTC,
-			},
-			folder: folder,
-		}
+		dlo, err := createDownloadOrder(
+			channel,
+			startTimeUTC,
+			endTimeUTC,
+			folder,
+		)
 
-		if validate(dlo) {
+		if validate(dlo) && err == nil {
 			// Send order into network
-			//
 			orders <- dlo
 		} else {
-			printMsg("Application", "Order not valid!")
+			printMsg("Application", "Order not valid! No order send into network!")
 		}
 
 	}
 
+	// Map of current builtin commands
+	//
 	cmds := map[string]func(){
 		"quit": func() { quit <- true },
 		"dl":   func() { dl() },
