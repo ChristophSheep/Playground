@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafov/m3u8"
 	"github.com/mysheep/cell/cm3u8"
 	"github.com/mysheep/cell/ctime"
 	"github.com/mysheep/cell/web"
@@ -220,6 +222,22 @@ func StartStopTimer(timeSlots <-chan TimeSlot, startSignals chan<- bool, stopSig
 		ends <- ts.end
 	}
 
+}
+
+func getMediaPlayListUrlOfVariant(baseUrl cm3u8.M3U8URL, masterPlaylist m3u8.MasterPlaylist, variantIndex uint) (cm3u8.M3U8URL, error) {
+
+	// TODO: Take first variant or ??
+	//
+	mediaPlaylistUrl := cm3u8.M3U8URL(masterPlaylist.Variants[variantIndex].URI)
+	mediaPlaylistUrl = makeAbsolute(baseUrl, mediaPlaylistUrl)
+
+	// https://apasfiis.sf.apa.at/ipad/gp/livestream_Q6A.mp4/chunklist.m3u8?lbs=20190412132743573&origin=http%253a%252f%252fvarorfvod.sf.apa.at%252fsystem_clips%252flivestream_Q6A.mp4%252fchunklist.m3u8&ip=129.27.216.70&ua=Go-http-client%252f1.1
+
+	if strings.Contains(string(mediaPlaylistUrl), "chunklist.m3u8") {
+		return cm3u8.M3U8URL(""), errors.New("Media play list is chunklist")
+	}
+
+	return mediaPlaylistUrl, nil
 }
 
 // Downloader cell download the given url in downloaditem
