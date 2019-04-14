@@ -22,6 +22,7 @@ var (
 	}
 )
 
+// Grapper graps given download order with master m3u8 url, start, stop time and folder
 func Grapper(orders <-chan DownloadOrder) {
 
 	timeSlots := make(chan TimeSlot)
@@ -62,8 +63,10 @@ func Grapper(orders <-chan DownloadOrder) {
 	}
 }
 
-func MediaLoaderSlidingWindow(masterUrlsIn <-chan cm3u8.M3U8URL, startSignal,
-	stopSignal <-chan bool, folders <-chan string, downloadedUrlsOut chan<- cm3u8.M3U8URL) {
+// MediaLoaderSlidingWindow loads segments (*.ts files) of sliding window live stream
+func MediaLoaderSlidingWindow(masterUrlsIn <-chan cm3u8.M3U8URL,
+	startSignalIn, stopSignalIn <-chan bool, folders <-chan string,
+	downloadedUrlsOut chan<- cm3u8.M3U8URL) {
 
 	// Const
 	//
@@ -134,7 +137,7 @@ func MediaLoaderSlidingWindow(masterUrlsIn <-chan cm3u8.M3U8URL, startSignal,
 		return (present == false) // if not in map then download, let it pass through filter
 	}
 	go OnlyNewDownloader(filterFn, folder, urlsToDownload, downloadedUrls)
-	go StartStopConverter(startSignal, stopSignal, onOffSignal)
+	go StartStopConverter(startSignalIn, stopSignalIn, onOffSignal)
 
 	// Mark downloaded url in map (= queue)
 	//
