@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/grafov/m3u8"
 	"github.com/mysheep/cell"
@@ -312,9 +313,10 @@ func main() {
 	dlw := func() {
 
 		channel := getString("Which channel " + getChannelList() + " ?")
-		startTimeUTC := getDateTimeLocal("Which start time (eg. 2019-04-04 12:00) ?").UTC()
-		endTimeUTC := getDateTimeLocal("Which   end time (eg. 2019-04-04 12:00) ?").UTC()
-		folder := getString("Which folder ?")
+		now := time.Now().Format(dateFormat)
+		startTimeUTC := getDateTimeLocal("Which start time (eg.: " + now + ") ?").UTC()
+		endTimeUTC := getDateTimeLocal("Which   end time (eg.: " + now + ") ?").UTC()
+		folder := getDownloadSubFolder("Which folder ?")
 
 		// Check
 		// - Channel exists

@@ -56,13 +56,10 @@ type DownloadItem struct {
 // createDownloadOrder create a downloadOrder with the given
 // parameter, it also ensure that the folder exists are creation
 func createDownloadOrder(channel string, startTimeUTC, endTimeUTC time.Time, folder string) (DownloadOrder, error) {
-
 	dir, err := ensureDir(folder)
-
 	if err != nil {
 		return DownloadOrder{}, err
 	}
-
 	return DownloadOrder{
 		channel: channel,
 		timeSlot: TimeSlot{
@@ -75,6 +72,7 @@ func createDownloadOrder(channel string, startTimeUTC, endTimeUTC time.Time, fol
 
 func validate(do DownloadOrder) bool {
 
+	// validateChannel validates, if the entered channel is a supported channel
 	validateChannel := func() bool {
 		chs := getKeys(channels)
 		fmt.Println("chs:", chs)
@@ -85,6 +83,7 @@ func validate(do DownloadOrder) bool {
 		return true
 	}
 
+	// validateTimeSlot validates, if start time is before end time
 	validateTimeSlot := func() bool {
 		if do.timeSlot.start.Sub(do.timeSlot.end) > 0 {
 			printMsg("Validater", "start time > end time!")
@@ -93,18 +92,17 @@ func validate(do DownloadOrder) bool {
 		return true
 	}
 
+	// validateFolder validates, if folder string is a folder
 	validateFolder := func() bool {
 		_, err := os.Stat(do.folder)
 		if err != nil {
 			printMsg("Validater", "folder '"+do.folder+"' is not a path!")
 			return false
 		}
-
 		return true
 	}
 
 	return validateChannel() && validateTimeSlot() && validateFolder()
-
 }
 
 // getChannelList return a list of
@@ -124,16 +122,31 @@ func getKeys(channels map[string]cm3u8.M3U8URL) []string {
 	return keys
 }
 
+// createFullDir creates the full download directory path
+// e.g. folder = "bar" -> fullDir = "./download/bar/"
+func createFullDir(folder string) string {
+	fullpath := filepath.Join(".", downloadFolder, folder, "/")
+	return fullpath
+}
+
+// existsDir check if a given folder already exists
+func existsDir(folder string) bool {
+	fileInfo, err := os.Stat(folder)
+	if err == nil && fileInfo.IsDir() {
+		return true
+	}
+	return false
+}
+
 // ensureDir ensure that a given directory
 // exists, if it not already exists it
 // create the directory
 func ensureDir(folder string) (string, error) {
-	newpath := filepath.Join(".", downloadFolder, folder)
-	err := os.MkdirAll(newpath, os.ModePerm)
+	err := os.MkdirAll(folder, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
-	return newpath, nil
+	return folder, nil
 }
 
 // stringInSlice return true if the given
@@ -161,7 +174,6 @@ func getString(question string) string {
 	scanner := bufio.NewScanner(os.Stdin)
 	if scanner.Scan() {
 		result = scanner.Text()
-
 	}
 	return result
 }
@@ -170,29 +182,48 @@ func getString(question string) string {
 // e.g. > Start time ? 2019-04-01 13:10 and it convert
 // to local time (location is "Vienna")
 func getDateTimeLocal(question string) time.Time {
-	dateTimeStr := getString(question)
+	result := time.Now()
+	for {
+		dateTimeStr := getString(question)
 
-	loc, err := time.LoadLocation(countryTz["Vienna"])
-	if err != nil {
-		panic(err)
-	}
+		loc, err := time.LoadLocation(countryTz["Vienna"])
+		if err != nil {
+			panic(err)
+		}
 
-	result, err := time.ParseInLocation(dateFormat, dateTimeStr, loc)
-	if err != nil {
-		fmt.Println("Error: ", err)
+		result, err = time.ParseInLocation(dateFormat, dateTimeStr, loc)
+		if err == nil {
+			break
+		} else {
+			fmt.Println("Wrong format. Try again.")
+		}
 	}
 	return result
+}
+
+// getDownloadFolder ask the user for the relative folder inside download
+// e.g. if user enter "movieA", it returns "download/movie"
+func getDownloadSubFolder(question string) string {
+	fullpath := createFullDir(".")
+	for {
+		relFolder := getString(question)
+		fullpath = createFullDir(relFolder)
+		if existsDir(fullpath) {
+			fmt.Println("Folder", fullpath, "already exists!")
+		} else {
+			break
+		}
+	}
+	return fullpath
 }
 
 // getFileName extracts the file name of an url
 // e.g. http://foo.com/bar.ts -> bar.ts
 func getFilename(urlRaw cm3u8.M3U8URL) string {
-
 	url, err := url.Parse(string(urlRaw))
 	if err != nil {
 		panic(err)
 	}
-
 	return path.Base(url.Path)
 }
 
@@ -221,7 +252,6 @@ func StartStopTimer(timeSlots <-chan TimeSlot, startSignals chan<- bool, stopSig
 		starts <- ts.start
 		ends <- ts.end
 	}
-
 }
 
 func getMediaPlayListUrlOfVariant(baseUrl cm3u8.M3U8URL, masterPlaylist m3u8.MasterPlaylist, variantIndex uint) (cm3u8.M3U8URL, error) {

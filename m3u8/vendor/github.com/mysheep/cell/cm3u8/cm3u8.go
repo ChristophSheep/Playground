@@ -3,6 +3,7 @@ package cm3u8
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -164,7 +165,8 @@ func Filter(ins <-chan M3U8URL, outs chan<- M3U8URL, fn func(M3U8URL) bool) {
 func getPlaylist(m3u8Url M3U8URL) (m3u8.Playlist, m3u8.ListType, error) {
 	resp, err := http.Get(string(m3u8Url))
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return nil, m3u8.MASTER, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
