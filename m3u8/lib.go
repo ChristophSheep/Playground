@@ -256,8 +256,6 @@ func StartStopTimer(timeSlots <-chan TimeSlot, startSignals chan<- bool, stopSig
 
 func getMediaPlayListUrlOfVariant(baseUrl cm3u8.M3U8URL, masterPlaylist m3u8.MasterPlaylist, variantIndex uint) (cm3u8.M3U8URL, error) {
 
-	// TODO: Take first variant or ??
-	//
 	mediaPlaylistUrl := cm3u8.M3U8URL(masterPlaylist.Variants[variantIndex].URI)
 	mediaPlaylistUrl = makeAbsolute(baseUrl, mediaPlaylistUrl)
 
@@ -274,26 +272,32 @@ func getMediaPlayListUrlOfVariant(baseUrl cm3u8.M3U8URL, masterPlaylist m3u8.Mas
 // and save it to the given folder
 func Downloader(items <-chan DownloadItem, downloaded chan<- cm3u8.M3U8URL) {
 
+	// Channels for Downloader
 	urls := make(chan string)
 	contents := make(chan []byte)
+
+	// Channels for Saver
 	filenames := make(chan string)
 	bytess := make(chan []byte)
 	savedFilenames := make(chan string)
 
+	// Setup SubNet
 	go web.Downloader(urls, contents)
 	go web.Saver(filenames, bytess, savedFilenames)
 
+	// Now go and work
 	for {
+		// receive information what to download and save
 		item := <-items
+		fileName := path.Join(item.folder, getFilename(item.url))
 
-		// Send url and ...
+		// Send url to downloader and ...
 		urls <- string(item.url)
 
 		// ... wait for downloaded content
 		content := <-contents
 
-		// Send filename and bytess and ...
-		fileName := path.Join(item.folder, getFilename(item.url))
+		// Send fileName and content to saver and ...
 		filenames <- fileName
 		bytess <- content
 

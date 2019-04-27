@@ -136,7 +136,7 @@ func SegmentsGrapper(mediaPlaylists <-chan m3u8.MediaPlaylist, mediaSegmentURIs 
 		//fmt.Println("SegmentsGrapper", "-", "mediaPlaylist count:", mediaPlaylist.Count())
 		for i := uint(0); i < mediaPlaylist.Count(); i++ {
 			mediaSegment := mediaPlaylist.Segments[i]
-			//fmt.Println("SegmentsGrapper", "-", "mediaPlaylist segement i:", i, " uri:", mediaSegment.URI)
+			//fmt.Println("SegmentsGrapper", "-", "mediaPlaylist segment i:", i, " uri:", mediaSegment.URI)
 			mediaSegmentURIs <- M3U8URL(mediaSegment.URI)
 		}
 	}
