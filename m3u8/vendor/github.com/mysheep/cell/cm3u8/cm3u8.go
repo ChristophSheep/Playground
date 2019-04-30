@@ -2,6 +2,8 @@ package cm3u8
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -12,9 +14,9 @@ import (
 )
 
 // Master
-//  - Variant 0 (quality, url, ...)
-//  - Variant 1
-//  - Variant 2
+//  - Variant 0 {quality 0, media url 0, ...
+//  - Variant 1 {quality 1, media url 1, ...)
+//  - Variant 2 {quality 2, media url 2, ...)
 
 // Media
 //  - Segment 0.ts
@@ -28,18 +30,24 @@ type M3U8URL string
 // and send it to the outputs channel
 func MasterLoader(urls <-chan M3U8URL, masterPlayLists chan<- m3u8.MasterPlaylist) {
 
-	for {
-
-		m3u8Url := <-urls
-
-		pl, listType, err := getPlaylist(m3u8Url)
+	getMasterPlayList := func(url M3U8URL) (m3u8.MasterPlaylist, error) {
+		empty := m3u8.MasterPlaylist{}
+		pl, listType, err := getPlaylist(url)
 		if err != nil {
-			panic(err)
+			return empty, errors.New("Url could not be loaded")
 		}
-
 		if listType == m3u8.MASTER {
 			masterpl := pl.(*m3u8.MasterPlaylist)
-			masterPlayLists <- *masterpl
+			return *masterpl, nil
+		}
+		return empty, errors.New("Url was not a masterplay m3u8")
+	}
+
+	for {
+		url := <-urls
+		masterPlaylist, err := getMasterPlayList(url)
+		if err == nil {
+			masterPlayLists <- masterPlaylist
 		}
 	}
 }
@@ -49,19 +57,24 @@ func MasterLoader(urls <-chan M3U8URL, masterPlayLists chan<- m3u8.MasterPlaylis
 // sends to the output channel
 func MediaLoader(urls <-chan M3U8URL, mediaPlayLists chan<- m3u8.MediaPlaylist) {
 
-	for {
-
-		m3u8Url := <-urls
-		//fmt.Println("MediaLoader", "-", "m3u8Url:", m3u8Url)
-
-		pl, listType, err := getPlaylist(m3u8Url)
+	getMediaPlaylist := func(url M3U8URL) (m3u8.MediaPlaylist, error) {
+		empty := m3u8.MediaPlaylist{}
+		pl, listType, err := getPlaylist(url)
 		if err != nil {
-			panic(err)
+			return empty, errors.New("Url could not be loaded")
 		}
-
 		if listType == m3u8.MEDIA {
 			mediapl := pl.(*m3u8.MediaPlaylist)
-			mediaPlayLists <- *mediapl
+			return *mediapl, nil
+		}
+		return empty, errors.New("Url is not a mediaplaylist")
+	}
+
+	for {
+		url := <-urls
+		mediaPlayList, err := getMediaPlaylist(url)
+		if err == nil {
+			mediaPlayLists <- mediaPlayList
 		}
 	}
 }
@@ -91,6 +104,10 @@ func Repeater(intervalInSec uint, ins <-chan M3U8URL, outs chan<- M3U8URL) {
 	}
 }
 
+// Switch receive on or off signal in onOffs channel
+// if the swithc receive a onOff = true
+// the incoming urls and send to output channel
+// else the incoming urls are consumed, but not send to output channel
 func Switch(onOffs <-chan bool, ins <-chan M3U8URL, outs chan<- M3U8URL) {
 
 	onOff := false
@@ -112,13 +129,14 @@ func Switch(onOffs <-chan bool, ins <-chan M3U8URL, outs chan<- M3U8URL) {
 
 }
 
+// SegmentsGrapper graps the url of each segment and send its to output
 func SegmentsGrapper(mediaPlaylists <-chan m3u8.MediaPlaylist, mediaSegmentURIs chan<- M3U8URL) {
 	for {
 		mediaPlaylist := <-mediaPlaylists
 		//fmt.Println("SegmentsGrapper", "-", "mediaPlaylist count:", mediaPlaylist.Count())
 		for i := uint(0); i < mediaPlaylist.Count(); i++ {
 			mediaSegment := mediaPlaylist.Segments[i]
-			//fmt.Println("SegmentsGrapper", "-", "mediaPlaylist segement i:", i, " uri:", mediaSegment.URI)
+			//fmt.Println("SegmentsGrapper", "-", "mediaPlaylist segment i:", i, " uri:", mediaSegment.URI)
 			mediaSegmentURIs <- M3U8URL(mediaSegment.URI)
 		}
 	}
@@ -147,7 +165,8 @@ func Filter(ins <-chan M3U8URL, outs chan<- M3U8URL, fn func(M3U8URL) bool) {
 func getPlaylist(m3u8Url M3U8URL) (m3u8.Playlist, m3u8.ListType, error) {
 	resp, err := http.Get(string(m3u8Url))
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return nil, m3u8.MASTER, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)

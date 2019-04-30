@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+// Downloader download content of given url and
+// send it to output contents channel
 func Downloader(urls <-chan string, contents chan<- []byte) {
 
 	getBytes := func(url string) []byte {
@@ -30,6 +32,8 @@ func Downloader(urls <-chan string, contents chan<- []byte) {
 	}
 }
 
+// Saver save the bytes by given filename and
+// send the save file name to output channel
 func Saver(filenames <-chan string, bytess <-chan []byte, savedFilenames chan<- string) {
 
 	createAndWrite := func(filename string, bytes []byte) {
