@@ -7,6 +7,7 @@ import (
 func Timer(timesUTC <-chan time.Time, signal chan<- bool) {
 	for {
 		t := <-timesUTC
+
 		durationToStart := t.Sub(time.Now())
 
 		if durationToStart < 0 {
