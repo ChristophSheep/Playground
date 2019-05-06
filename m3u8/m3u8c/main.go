@@ -218,7 +218,7 @@ func main() {
 */
 
 func main() {
-	const folder = "/Users/christophreif/Movies/Formel1/2019-04-14_ChinaGP"
+	const folder = "/Users/christophreif/Movies/F1/2019/2019-04-28_Baku_GP"
 	//const folder = "."
 
 	files := getTsFiles(folder)

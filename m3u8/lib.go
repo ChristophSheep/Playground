@@ -19,7 +19,8 @@ import (
 
 const (
 	// dateFormat uses in getDatetimeLocal function
-	dateFormat = "2006-01-02 15:04"
+	dateFormat     = "2006-01-02 15:04"
+	dateFormatLong = "2006-01-02 15:04:05"
 )
 
 // see https://stackoverflow.com/questions/25318154/convert-utc-to-local-time-go
@@ -161,9 +162,16 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
+/*
+2019-04-27 14:21:09             Grapper - It seams no livestream available!
+2019-04-27 14:21:09             Grapper - It seams no livestream available!
+2019-04-27 14:21:09             Grapper - It seams no livestream available!
+*/
+
 // printMsg print a debug msg of object to console
 func printMsg(object string, msg string) {
-	fmt.Printf("%25s - %s\n", object, msg)
+	now := time.Now().Format(dateFormatLong)
+	fmt.Printf("%s %20s - %s\n", now, object, msg)
 }
 
 // getString ask the user to enter a string

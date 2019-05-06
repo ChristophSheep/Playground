@@ -238,7 +238,7 @@ func RepeatedMediaUrlGrapper(intervalSec uint, masterUrlsIn <-chan cm3u8.M3U8URL
 				//printMsg("Grapper", fmt.Sprintf("mediaPlaylistUrl: %v", mediaPlaylistUrl))
 				mediaPlaylistUrlsOut <- mediaPlaylistUrl
 			} else {
-				printMsg("Grapper", "It seams no livestream aavailable!")
+				printMsg("Grapper", "It seams no livestream available!")
 			}
 		}
 	}()
