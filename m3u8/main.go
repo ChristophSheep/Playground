@@ -16,10 +16,10 @@ const (
 
 var (
 	channels = map[string]cm3u8.M3U8URL{
-		"orf1m": cm3u8.M3U8URL("http://orf1.orfstg.cdn.ors.at/out/u/orf1/q4a/manifest.m3u8"), // mittel
-		"orf1h": cm3u8.M3U8URL("http://orf1.orfstg.cdn.ors.at/out/u/orf1/q6a/manifest.m3u8"), // hoch
-		"orf2m": cm3u8.M3U8URL("http://orf2.orfstg.cdn.ors.at/out/u/orf2/q4a/manifest.m3u8"), // mittel
-		"orf2h": cm3u8.M3U8URL("http://orf2.orfstg.cdn.ors.at/out/u/orf2/q6a/manifest.m3u8"), // hoch
+	 	"orf1m": cm3u8.M3U8URL("https://orf1.mdn.ors.at/out/u/orf1/q4a/manifest.m3u8"),     // mittel NEU
+		"orf1h": cm3u8.M3U8URL("https://orf1.mdn.ors.at/out/u/orf1/q6a/manifest.m3u8"),     // hoch NEUs
+		"orf2m": cm3u8.M3U8URL("http://orf2.mdn.ors.at/out/u/orf2/q4a/manifest.m3u8"), 		// mittel
+		"orf2h": cm3u8.M3U8URL("http://orf2.mdn.ors.at/out/u/orf2/q6a/manifest.m3u8"), 		// hoch
 	}
 )
 

@@ -9,6 +9,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -43,13 +45,20 @@ type Master struct {
 }
 
 type Media struct {
-	ExtXMediaSequence string
+	ExtXMediaSequence int
 	Segments          []Segment
 }
 
 type Segment struct {
+	Idx int
 	URI string
 }
+
+type ByIndex []Segment
+
+func (a ByIndex) Len() int           { return len(a) }
+func (a ByIndex) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByIndex) Less(i, j int) bool { return a[i].Idx < a[j].Idx }
 
 func createMasterFile(folder string) {
 	//define an instance
@@ -86,10 +95,28 @@ func getMediaTemplate() template.Template {
 	return *tmpl
 }
 
-func getStartSegNumber(segments []Segment) (string, error) {
+func parseNumber(fileName string) (int, error) {
+	isDigit := func(c byte) bool { return c >= '0' && c <= '9' }
+	ext := path.Ext(fileName)                    // e.g. .ts
+	fileName = strings.TrimSuffix(fileName, ext) // e.g. mainfest_4_123
+
+	numStr := ""
+	for i := len(fileName) - 1; i >= 0; i-- {
+		c := fileName[i]
+		if isDigit(c) {
+			numStr = string(c) + numStr
+		} else {
+			break
+		}
+	}
+	num, err := strconv.Atoi(numStr)
+	return num, err
+}
+
+func getStartSegNumber(segments []Segment) (int, error) {
 
 	if len(segments) == 0 {
-		return "", errors.New("Segments length is 0")
+		return -1, errors.New("Segments length is 0")
 	}
 
 	first := segments[0]
@@ -98,32 +125,29 @@ func getStartSegNumber(segments []Segment) (string, error) {
 	ext := path.Ext(fileName)                    // e.g. .ts
 	fileName = strings.TrimSuffix(fileName, ext) // e.g. mainfest_4_123
 
-	isDigit := func(c byte) bool {
-		return c >= '0' && c <= '9'
-	}
-
-	num := ""
-	for i := len(fileName) - 1; i >= 0; i-- {
-		c := fileName[i]
-		if isDigit(c) {
-			num = string(c) + num
-		} else {
-			break
-		}
-	}
-
-	return num, nil
+	num, err := parseNumber(fileName)
+	return num, err
 }
+
 func createMediaFile(folder string, tsFiles []string) {
 
 	createSegments := func(tsFiles []string) []Segment {
-		var segments []Segment
+
+		segments := []Segment{}
+
 		for _, tsFile := range tsFiles {
-			s := Segment{
-				URI: tsFile,
+			index, err := parseNumber(tsFile)
+			if err == nil {
+				s := Segment{
+					Idx: index,
+					URI: tsFile,
+				}
+				segments = append(segments, s)
 			}
-			segments = append(segments, s)
 		}
+
+		sort.Sort(ByIndex(segments))
+
 		return segments
 	}
 
@@ -132,7 +156,7 @@ func createMediaFile(folder string, tsFiles []string) {
 
 	startNum, err := getStartSegNumber(segments)
 	if err != nil {
-		fmt.Println("No sgements")
+		fmt.Println("No segments")
 	} else {
 		fmt.Println("Start seq number found:", startNum)
 	}
@@ -145,7 +169,6 @@ func createMediaFile(folder string, tsFiles []string) {
 	template := getMediaTemplate()
 	fullPath := path.Join(folder, mediaPlayListFileName)
 	writeTemplate(fullPath, template, data)
-
 }
 
 func writeTemplate(fullPath string, tmpl template.Template, data interface{}) {
@@ -218,9 +241,7 @@ func main() {
 */
 
 func main() {
-	const folder = "/Users/christophreif/Movies/F1/2019/2019-04-28_Baku_GP"
-	//const folder = "."
-
+	const folder = "/Users/christophreif/Movies/F1/2019/2019-09-21_Singapur_QF"
 	files := getTsFiles(folder)
 	createMasterFile(folder)
 	createMediaFile(folder, files)

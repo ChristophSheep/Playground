@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 )
 
 const (
@@ -18,6 +19,16 @@ const (
 // see https://wiki.selfhtml.org/wiki/CSS/Tutorials/Bilder_mit_Bildunterschriften
 //
 const tpl = `
+{{define "Item"}}
+<div>{{.}}</div>
+<figure>
+	<a href="./F1/2019/{{.Folder}}/master.m3u8">
+		<img src="./F1/images/{{.Name}}.png">
+		<figcaption>{{.Date}} {{.Name}}</figcaption>
+	</a>
+</figure>
+{{end}}
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -28,7 +39,6 @@ const tpl = `
 				position: relative;
 				margin: 20px;
 				padding: 10px;
-				width: 470px;
 				border: 1px solid gainsboro;
 				background: white;
 			}
@@ -42,13 +52,7 @@ const tpl = `
 	<body>
 		<h1>{{.Title}}</h1>
 		{{range .Items}}
-		<figure>
-			<a href="http://localhost:8000/F1/2019/{{.}}/master.m3u8">
-		    	<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Korea_international_circuit_v3.svg/260px-Korea_international_circuit_v3.svg.png">
-				<figcaption>{{.}}</figcaption>
-			</a>
-		</figure>
-		{{else}}<div><strong>no rows</strong></div>
+		{{template "Item" .}}
 		{{end}}
     </body>
 </html>`
@@ -84,8 +88,59 @@ func check(err error) {
 	}
 }
 
+type Page struct {
+	Title string
+	Items []Item
+}
+
+type Item struct {
+	Folder string // Attribute must start with BIG letter otherwise its private
+	Date   string
+	Name   string
+	Kind   string
+}
+
+// getDate get the date from folder name
+// e.g. 2019-05-12_Spanien-Barcelona_FT -> 2019-05-12
+func getDate(folder string) string {
+	return strings.Split(folder, "_")[0]
+}
+
+// getName get the name from the the folder name
+// e.g. 2019-05-12_Spanien-Barcelona_FT -> Spanien-Barcelona
+func getName(folder string) string {
+	return strings.Split(folder, "_")[1]
+}
+
+// getName get the name from the the folder name
+// e.g. 2019-05-12_Spanien-Barcelona_FT -> Spanien-Barcelona
+func getType(folder string) string {
+	return strings.Split(folder, "_")[2]
+}
+
+func createItem(folder string) Item {
+	return Item{
+		Folder: folder,
+		Date:   getDate(folder),
+		Name:   getName(folder),
+		Kind:   getType(folder),
+	}
+}
+
+func mapItem(folders []string) []Item {
+	items := make([]Item, len(folders))
+	for i, folder := range folders {
+		item := createItem(folder)
+		items[i] = item
+	}
+	return items
+}
+
 func writeFolders(w http.ResponseWriter, r *http.Request) {
-	// Create template for HTML
+
+	fmt.Printf("request: %v", r)
+
+	// Create template for HTML page
 	//
 	t, err := template.New("webpage").Parse(tpl)
 	check(err)
@@ -93,19 +148,15 @@ func writeFolders(w http.ResponseWriter, r *http.Request) {
 	// Get folders
 	//
 	folders := getFolders(rootFolder)
-	//check(err)
 
 	// Create data
 	//
-	data := struct {
-		Title string
-		Items []string
-	}{
+	data := Page{
 		Title: "F1 Movies",
-		Items: folders,
+		Items: mapItem(folders),
 	}
 
-	// Render HTML
+	// Render View by Template
 	//
 	err = t.Execute(w, data)
 }
