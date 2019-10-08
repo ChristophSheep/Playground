@@ -241,8 +241,9 @@ func main() {
 */
 
 func main() {
-	const folder = "/Users/christophreif/Movies/F1/2019/2019-09-21_Singapur_QF"
+	const folder = "/Users/christophreif/Movies/F1/2019/2019-09-29_Russland-Sotschi_GP"
 	files := getTsFiles(folder)
 	createMasterFile(folder)
 	createMediaFile(folder, files)
 }
+
