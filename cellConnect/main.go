@@ -25,7 +25,7 @@ func consumer(ch <-chan int) {
 type cell struct {
 	name         string
 	inConnected  chan bool
-	outConnected bool
+	outConnected chan bool
 	in           chan int
 	fn           func(int) int
 	out          chan int
@@ -35,42 +35,40 @@ func add1(x int) int {
 	return x + 1
 }
 
-func setIn(c cell, in chan int) {
+func setIn(c *cell, in chan int) {
 	c.in = in
 	c.inConnected <- true
+	fmt.Printf("setIn  %p %v\n", c, c)
 }
-func setOut(c cell, out chan int) {
+func setOut(c *cell, out chan int) {
 	c.out = out
-	c.outConnected = true
-	fmt.Printf("setOut: %v", c)
+	c.outConnected <- true
+	fmt.Printf("setOut %p %v\n", c, c)
 }
 
-func connect(src cell, dest cell) {
+func connect(src *cell, dest *cell) {
 	ch := make(chan int, 10)
-	setIn(dest, ch)
 	setOut(src, ch)
+	setIn(dest, ch)
 }
 
-func cellRun(c cell) {
+func cellRun(c *cell) {
 	for {
-		<-c.inConnected // wait until
-		fmt.Println("connected:", c.name)
+		<-c.inConnected  // wait until input connected
+		<-c.outConnected // wait until output connected
 		for {
 			val := c.fn(<-c.in)
-			fmt.Printf("cell run: %+v address:%p", c, &c)
-			fmt.Println(" - val:", val, "outConnected:", c.outConnected)
-			//if c.outConnected {
 			c.out <- val
-			//}
 		}
 	}
 }
 
-func makeCell(name string, in chan int, fn func(int) int, out chan int) cell {
-	connected := make(chan bool)
-	c := cell{name, connected, false, in, fn, out}
-	go cellRun(c)
-	return c
+func makeCell(name string, fn func(int) int) *cell {
+	ci := make(chan bool, 1)
+	co := make(chan bool, 1)
+	c := cell{name: name, inConnected: ci, outConnected: co, fn: fn}
+	go cellRun(&c)
+	return &c
 }
 
 //
@@ -90,25 +88,28 @@ func main() {
 
 	in := make(chan int, 10)
 	out := make(chan int, 10)
-	ch1 := make(chan int, 10)
+	//ch1 := make(chan int, 10)
+
+	// in       ch1      out
+	// -->[ c1 ] .... [ c2 ]-->
+	//
+
+	c1 := makeCell("cell1", add1)
+	c2 := makeCell("cell2", add1)
+
+	fmt.Printf("address cell1 %p\n", c1)
+	fmt.Printf("address cell2 %p\n", c2)
+
+	go cellDisplay(out)
+
+	setOut(c2, out)
+	setIn(c1, in)
+	connect(c1, c2)
 
 	in <- 1
 	in <- 2
 	in <- 3
 
-	c1 := makeCell("cell1", in, add1, ch1)
-	c2 := makeCell("cell2", ch1, add1, out)
-
-	fmt.Println()
-	fmt.Printf("cell c1: %v address: %p \n", c1, &c1)
-	fmt.Printf("cell c2: %v address: %p \n", c2, &c2)
-
-	go cellDisplay(out)
-
-	setIn(c1, in)
-	setOut(c2, out)
-
-	connect(c1, c2)
-
+	fmt.Println("wait 5 secs ...")
 	time.Sleep(5 * time.Second)
 }
