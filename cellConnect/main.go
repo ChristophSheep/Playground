@@ -53,13 +53,11 @@ func connect(src *cell, dest *cell) {
 }
 
 func cellRun(c *cell) {
+	<-c.inConnected  // wait until input connected
+	<-c.outConnected // wait until output connected
 	for {
-		<-c.inConnected  // wait until input connected
-		<-c.outConnected // wait until output connected
-		for {
-			val := c.fn(<-c.in)
-			c.out <- val
-		}
+		val := c.fn(<-c.in)
+		c.out <- val
 	}
 }
 
@@ -88,14 +86,13 @@ func main() {
 
 	in := make(chan int, 10)
 	out := make(chan int, 10)
-	//ch1 := make(chan int, 10)
-
-	// in       ch1      out
-	// -->[ c1 ] .... [ c2 ]-->
-	//
 
 	c1 := makeCell("cell1", add1)
 	c2 := makeCell("cell2", add1)
+
+	//
+	//    [ c1 ]     [ c2 ]
+	//
 
 	fmt.Printf("address cell1 %p\n", c1)
 	fmt.Printf("address cell2 %p\n", c2)
@@ -104,7 +101,16 @@ func main() {
 
 	setOut(c2, out)
 	setIn(c1, in)
+
+	// in                  out
+	// -->[ c1 ]     [ c2 ]-->
+	//
+
 	connect(c1, c2)
+
+	// in                   out
+	// -->[ c1 ] ----> [ c2 ]-->
+	//
 
 	in <- 1
 	in <- 2
