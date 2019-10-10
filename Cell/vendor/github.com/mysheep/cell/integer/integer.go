@@ -76,4 +76,53 @@ func Aggregate(ins []chan int, agg chan int, out chan int) {
 			out <- val
 		}
 	}
+
+}
+
+func MakeAgg(ins *[]chan int, out chan int) (func(), func(), func()) {
+
+	agg := make(chan int, 10)
+	exit := make(chan int)
+
+	var inFn = func(i int, ch chan int) {
+	Loop:
+		for {
+			select {
+			case val := <-ch:
+				agg <- val
+			case ii := <-exit:
+				fmt.Println("exit", i, "agg fn")
+				if i == ii {
+					fmt.Println("exit break", i, "agg fn")
+					break Loop
+				}
+			}
+		}
+		fmt.Println("exited", i, "agg fn")
+	}
+
+	var exitFn = func() {
+		for i, _ := range *ins {
+			exit <- i
+		}
+	}
+
+	var updateAggsFn = func() {
+		fmt.Println("update", len((*ins)), "ins")
+		for i, in := range *ins {
+			fmt.Println("create", i, "agg fn")
+			go inFn(i, in)
+		}
+	}
+
+	var aggFn = func() {
+		for {
+			select {
+			case val := <-agg:
+				out <- val
+			}
+		}
+	}
+
+	return updateAggsFn, aggFn, exitFn
 }

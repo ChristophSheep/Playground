@@ -52,11 +52,13 @@ func main() {
 	N := 5
 	ins := make([]chan int, N)
 	fin := make(chan int, 10)
-	agg := make(chan int, 10)
+	//agg := make(chan int, 10)
 	for i := 0; i < N; i++ {
 		ins[i] = make(chan int)
 	}
-	go integer.Aggregate(ins, agg, fin)
+	updateFn, aggFn, exitFn := integer.MakeAgg(&ins, fin)
+	updateFn()
+	go aggFn()
 	go integer.Display(fin)
 
 	//
@@ -65,31 +67,21 @@ func main() {
 	cmds := map[string]func(){
 		"quit": func() { done <- true },
 		"emit": func() { inX <- 1; inY <- 2 },
-		"emit2": func() {
-			for i := 0; i < N; i++ {
+		"agg": func() {
+			for i := 0; i < len(ins); i++ {
 				fmt.Println("send", i)
 				ins[i] <- i
 			}
 		},
-		"emit3": func() {
+		"add": func() {
 			ins = append(ins, make(chan int))
-			M := len(ins)
-
-			// TODO: Update - if add a new ins channel, you need also
-			go func(i int, ch chan int) {
-				for val := range ch {
-					agg <- val
-				}
-			}(M-1, ins[M-1])
-			// TODO: Update
-
-			fmt.Println("M:", M)
-			for i := 0; i < M; i++ {
-				fmt.Println("send", i)
-				ins[i] <- i
-			}
-
-			// TODO: Update Agg goroutines
+			fmt.Println("add", len(ins), "ins")
+		},
+		"exit": func() {
+			exitFn()
+		},
+		"upd": func() {
+			updateFn()
 		},
 	}
 
