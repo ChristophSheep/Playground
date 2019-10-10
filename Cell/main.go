@@ -50,16 +50,14 @@ func main() {
 	// Aggregation
 	//
 	N := 5
-	//M := 10
 	ins := make([]chan int, N)
-	out2 := make(chan int, 10)
+	fin := make(chan int, 10)
 	agg := make(chan int, 10)
-	//out := make(chan int)
 	for i := 0; i < N; i++ {
 		ins[i] = make(chan int)
 	}
-	go integer.Aggregate(ins, agg, out2)
-	go integer.Display(out2)
+	go integer.Aggregate(ins, agg, fin)
+	go integer.Display(fin)
 
 	//
 	// Console Commands

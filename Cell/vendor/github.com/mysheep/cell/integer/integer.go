@@ -27,8 +27,6 @@ func AddAsync(in1, in2 <-chan int, out chan<- int) {
 		case val2 = <-in2:
 			res := calc()
 			out <- res
-			//default: // spinning of default clause exists
-			// Nothing todo
 		}
 	}
 }
