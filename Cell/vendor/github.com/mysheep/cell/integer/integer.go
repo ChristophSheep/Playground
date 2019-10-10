@@ -2,7 +2,7 @@ package integer
 
 import "fmt"
 
-func Add1(in <-chan int, out chan<- int) {
+func AddOne(in <-chan int, out chan<- int) {
 	for {
 		val := <-in
 		val = val + 1
@@ -10,7 +10,7 @@ func Add1(in <-chan int, out chan<- int) {
 	}
 }
 
-func Add2Async(in1, in2 <-chan int, out chan<- int) {
+func AddAsync(in1, in2 <-chan int, out chan<- int) {
 
 	var val1 = 0
 	var val2 = 0
@@ -27,7 +27,7 @@ func Add2Async(in1, in2 <-chan int, out chan<- int) {
 		case val2 = <-in2:
 			res := calc()
 			out <- res
-		default:
+			//default: // spinning of default clause exists
 			// Nothing todo
 		}
 	}
@@ -54,5 +54,28 @@ func Display(in <-chan int) {
 	for {
 		val := <-in
 		fmt.Println("display", "val:", val)
+	}
+}
+
+// https://stackoverflow.com/questions/19992334/how-to-listen-to-n-channels-dynamic-select-statement
+
+func Aggregate(ins []chan int, agg chan int, out chan int) {
+
+	//agg := make(chan int, 10)
+
+	// TODO: Forwarder
+	for i, in := range ins {
+		go func(i int, ch chan int) {
+			for val := range ch {
+				agg <- val
+			}
+		}(i, in)
+	}
+
+	for {
+		select {
+		case val := <-agg:
+			out <- val
+		}
 	}
 }
