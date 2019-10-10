@@ -56,10 +56,12 @@ func main() {
 	for i := 0; i < N; i++ {
 		ins[i] = make(chan int)
 	}
-	updateFn, aggFn, exitFn := integer.MakeAgg(&ins, fin)
+	updateFn, aggFn, quitFn := integer.MakeAgg(&ins, fin)
 	updateFn()
 	go aggFn()
 	go integer.Display(fin)
+
+	var addOneFn = func() { ins = append(ins, make(chan int)) }
 
 	//
 	// Console Commands
@@ -74,13 +76,18 @@ func main() {
 			}
 		},
 		"add": func() {
-			ins = append(ins, make(chan int))
+			addOneFn()
 			fmt.Println("add", len(ins), "ins")
 		},
 		"exit": func() {
-			exitFn()
+			quitFn()
 		},
 		"upd": func() {
+			updateFn()
+		},
+		"all": func() {
+			quitFn()
+			addOneFn()
 			updateFn()
 		},
 	}

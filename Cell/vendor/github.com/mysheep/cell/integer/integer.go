@@ -59,9 +59,6 @@ func Display(in <-chan int) {
 
 func Aggregate(ins []chan int, agg chan int, out chan int) {
 
-	//agg := make(chan int, 10)
-
-	// TODO: Forwarder
 	for i, in := range ins {
 		go func(i int, ch chan int) {
 			for val := range ch {
@@ -83,6 +80,7 @@ func MakeAgg(ins *[]chan int, out chan int) (func(), func(), func()) {
 
 	agg := make(chan int, 10)
 	exit := make(chan int)
+	exited := make(chan int)
 
 	var inFn = func(i int, ch chan int) {
 	Loop:
@@ -90,21 +88,30 @@ func MakeAgg(ins *[]chan int, out chan int) (func(), func(), func()) {
 			select {
 			case val := <-ch:
 				agg <- val
-			case ii := <-exit:
-				fmt.Println("exit", i, "agg fn")
-				if i == ii {
-					fmt.Println("exit break", i, "agg fn")
-					break Loop
-				}
+			case <-exit:
+				fmt.Println("exit break", i, "agg fn")
+				break Loop
 			}
 		}
+		exited <- i
 		fmt.Println("exited", i, "agg fn")
 	}
 
 	var exitFn = func() {
-		for i, _ := range *ins {
+		N := len((*ins))
+
+		// Send each one signal to exit
+		for i := 0; i < N; i++ {
+			fmt.Println("send", i, "to exit")
 			exit <- i
 		}
+
+		// Wait until all N exited
+		for j := 0; j < N; j++ {
+			fmt.Println("wait", j, "to exit")
+			<-exited
+		}
+
 	}
 
 	var updateAggsFn = func() {
