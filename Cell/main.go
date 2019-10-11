@@ -124,7 +124,6 @@ func main() {
 		"cell": func() {
 			for ii := 0; ii < 100; ii++ {
 				i := rand.Intn(S)
-				//fmt.Println("synapse ", i, "weight:", weights[i])
 				sIns[i] <- i
 				time.Sleep(50 * time.Millisecond)
 			}

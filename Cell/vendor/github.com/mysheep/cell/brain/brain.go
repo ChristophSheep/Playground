@@ -3,6 +3,7 @@ package brain
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -98,6 +99,7 @@ func Writer(in <-chan int) {
 	for val := range in {
 		setFirst(&flag, &first)
 		s := fmt.Sprintf("%0.3f\t%d\n", getDelta(first), val)
+		s = strings.Replace(s, ".", ",", -1)
 		file.WriteString(s)
 	}
 }
