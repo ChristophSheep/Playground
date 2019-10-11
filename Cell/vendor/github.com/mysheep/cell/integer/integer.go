@@ -133,3 +133,35 @@ func MakeAgg(ins *[]chan int, out chan int) (func(), func(), func()) {
 
 	return updateAggsFn, aggFn, exitFn
 }
+
+func MakeDynAgg(ins *[]chan int, out chan int) (func(chan int), func()) {
+
+	agg := make(chan int)
+
+	var inFn = func(i int, ch chan int) {
+		for val := range ch {
+			agg <- val
+		}
+	}
+
+	var aggFn = func() {
+		for {
+			select {
+			case val := <-agg:
+				out <- val
+			}
+		}
+	}
+
+	var addFn = func(in chan int) {
+		i := len(*ins)
+		*ins = append(*ins, in)
+		go inFn(i, in)
+	}
+
+	for i, in := range *ins {
+		go inFn(i, in)
+	}
+
+	return addFn, aggFn
+}
