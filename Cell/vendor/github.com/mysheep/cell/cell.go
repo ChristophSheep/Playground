@@ -57,7 +57,7 @@ func Console(cmdFns map[string]func()) {
 			fnCmd := cmdFns[cmd]
 			fnCmd()
 		} else {
-			fmt.Printf("%s: Command not found!", cmd)
+			fmt.Printf("'%s' Command not found!", cmd)
 			fmt.Println()
 			fmt.Println()
 			fmt.Println("Available commands:")

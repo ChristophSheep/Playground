@@ -93,7 +93,7 @@ func main() {
 
 	for j := 0; j < A; j++ {
 		axOuts[j] = make(chan int)
-		go brain.Display(axOuts[j], "- axon")
+		go brain.Writer(axOuts[j])
 	}
 	go brain.Cell(sOuts, axIn)
 	go brain.Axon(axIn, axOuts)
@@ -124,7 +124,7 @@ func main() {
 		"cell": func() {
 			for ii := 0; ii < 100; ii++ {
 				i := rand.Intn(S)
-				fmt.Println("synapse ", i, "weight:", weights[i])
+				//fmt.Println("synapse ", i, "weight:", weights[i])
 				sIns[i] <- i
 				time.Sleep(50 * time.Millisecond)
 			}
