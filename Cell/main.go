@@ -74,17 +74,23 @@ func main() {
 	// Cell with weighted Synapses, Body and Axon
 	//
 
+	//  synapse
+	//  ------> w1  / ----- \
+	//             |         |  axon
+	//  ------> w2 |  cell   |-------->
+	//             |         |
+	//  ------> w5  \ ----- /
+
 	S := 5
 
+	bIn := make(chan int, 100) // buffered body input for aggretion of all synopses
 	sIns := make([]chan int, S)
-	sOuts := make([]chan int, S)
 	weights := make([]int, S)
 
 	for j := 0; j < S; j++ {
 		sIns[j] = make(chan int)
-		sOuts[j] = make(chan int)
 		weights[j] = rand.Intn(7)
-		go brain.Synapse(weights[j], sIns[j], sOuts[j])
+		go brain.Synapse(weights[j], sIns[j], bIn)
 	}
 
 	A := 1
@@ -95,8 +101,31 @@ func main() {
 		axOuts[j] = make(chan int)
 		go brain.Writer(axOuts[j])
 	}
-	go brain.Cell(sOuts, axIn)
+	go brain.Body(bIn, axIn)
 	go brain.Axon(axIn, axOuts)
+
+	//
+	// Create to cell and connect them
+	//
+
+	c1 := brain.MakeCell("cell_1")
+	c2 := brain.MakeCell("cell_2")
+
+	c1ch1 := make(chan int)
+	c2out1 := make(chan int)
+
+	c1.AddInput(c1ch1, 13)
+	c2.AddOutput(c2out1)
+
+	//  13
+	// -->(c1)      (c2)--->
+
+	c1.ConnectWith(c2, 7)
+	outIdx := 0
+	go brain.Display(c2.Outputs[outIdx], fmt.Sprintf("%s.output[%d]", c2.Name, outIdx))
+
+	//  13        7
+	// -->(c1)----->(c2)--->Display
 
 	//
 	// Console Commands
@@ -126,6 +155,11 @@ func main() {
 				i := rand.Intn(S)
 				sIns[i] <- i
 				time.Sleep(50 * time.Millisecond)
+			}
+		},
+		"con": func() {
+			for k := 0; k < 10; k++ {
+				c1.Inputs[0] <- 1
 			}
 		},
 	}
