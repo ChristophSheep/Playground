@@ -10,6 +10,13 @@ import (
 	"github.com/mysheep/cell/integer"
 )
 
+func print(ys []int) {
+	for _, y := range ys {
+		fmt.Print("y:", y)
+	}
+	fmt.Println()
+}
+
 func main() {
 
 	//
@@ -107,6 +114,8 @@ func main() {
 	//
 	// Create two cells and connect them
 	//
+
+	fmt.Println("Setup network: 1 emitter + 2 cells + 1 display")
 
 	c1 := brain.MakeCell("cell_1")
 	c2 := brain.MakeCell("cell_2")

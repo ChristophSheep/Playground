@@ -49,6 +49,7 @@ func Body(agg <-chan int, out chan<- int) {
 }
 
 func Axon(in <-chan int, outs []chan int) {
+	//fmt.Printf("Axon 2 %p \n", &outs)
 	for {
 		val := <-in
 		for _, out := range outs {
@@ -58,6 +59,7 @@ func Axon(in <-chan int, outs []chan int) {
 }
 
 func Axon2(in <-chan int, outs *[]chan int) {
+	//fmt.Printf("Axon 2 %p \n", outs)
 	for {
 		val := <-in
 		for _, out := range *outs {
@@ -66,17 +68,10 @@ func Axon2(in <-chan int, outs *[]chan int) {
 	}
 }
 
-func DisplayM(ins *[]chan int, name string) {
-	for i, val := range *ins {
-		text := fmt.Sprintf("display %s channel %d", name, i)
-		fmt.Println(time.Now().Format("15:04:05.000"), text, "val:", val)
-	}
-}
-
 func Display(in <-chan int, text string) {
 	for {
 		val := <-in
-		fmt.Println(time.Now().Format("15:04:05.000"), text, "val:", val)
+		fmt.Println(time.Now().Format("15:04:05.000"), "-", text, "val:", val)
 	}
 }
 
