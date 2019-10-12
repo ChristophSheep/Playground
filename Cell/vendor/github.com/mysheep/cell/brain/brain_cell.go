@@ -1,10 +1,14 @@
 package brain
 
+// ----------------------------------------------------------------------------
+// Multi input weighted and multi output cell
+// ----------------------------------------------------------------------------
 //         Synapses
 //  inputs +->|	          | outputs   +-->
 // --------+->| cell body |-----------+-->
 //  inputs +->|           |  Axon     +-->
 //         weights
+// ----------------------------------------------------------------------------
 
 type Cell struct {
 	name string
@@ -22,12 +26,14 @@ func MakeCell(name string) *Cell {
 	N := 0 // No input per default for now
 
 	c := Cell{
-		name:    name,
+		name: name,
+
 		inputs:  make([]chan int, N),
 		weights: make([]int, N),
 		outputs: make([]chan int, N),
-		bodyIn:  make(chan int),
-		axIn:    make(chan int),
+
+		bodyIn: make(chan int, 100), // buffered, because many pipe in
+		axIn:   make(chan int),
 	}
 
 	for j := 0; j < len(c.inputs); j++ {

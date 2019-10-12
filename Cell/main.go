@@ -117,22 +117,22 @@ func main() {
 
 	fmt.Println("Setup network: 1 emitter + 2 cells + 1 display")
 
-	c1 := brain.MakeCell("cell_1")
-	c2 := brain.MakeCell("cell_2")
+	cell1 := brain.MakeCell("cell_1")
+	cell2 := brain.MakeCell("cell_2")
 
 	//  13
-	// -->(c1)      (c2)--->
+	// -->(cell1)      (cell2)--->
 
-	brain.ConnectBy(c1, c2, 7)
+	brain.Connect(cell1, cell2, 7)
 
-	d := brain.MakeDisplayCell("display_1")
-	brain.ConnectBy(c2, d, 1)
+	display1 := brain.MakeDisplayCell("display_1")
+	brain.Connect(cell2, display1, 1)
 
-	e := brain.MakeEmitterCell("emit_1")
-	brain.ConnectBy(e, c1, 13)
+	emitter1 := brain.MakeEmitterCell("emitter_1")
+	brain.Connect(emitter1, cell1, 13)
 
 	//  13        7
-	// -->(c1)----->(c2)--->Display
+	// -->(cell1)----->(cell2)--->Display
 
 	//
 	// Console Commands
@@ -166,7 +166,7 @@ func main() {
 		},
 		"con": func() {
 			for k := 0; k < 10; k++ {
-				e.EmitOne()
+				emitter1.EmitOne()
 				time.Sleep(50 * time.Millisecond)
 			}
 		},

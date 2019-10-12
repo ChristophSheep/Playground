@@ -2,14 +2,18 @@ package brain
 
 import "fmt"
 
-type Connect interface {
+// ----------------------------------------------------------------------------
+// Connect interface between cells
+// ----------------------------------------------------------------------------
+
+type Connecter interface {
 	AddInput(ch chan int, weight int)
 	AddOutput(ch chan int)
 	Update()
 	Name() string
 }
 
-func ConnectBy(from, to Connect, weight int) {
+func Connect(from, to Connecter, weight int) {
 	ch := make(chan int)
 
 	from.AddOutput(ch)
