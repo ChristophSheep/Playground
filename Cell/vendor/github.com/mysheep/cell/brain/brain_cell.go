@@ -1,13 +1,15 @@
 package brain
 
 // ----------------------------------------------------------------------------
-// Multi input weighted and multi output cell
+// Multi weighted inputs and one output axon with multi connections cell
 // ----------------------------------------------------------------------------
-//         Synapses
-//  inputs +->|	          | outputs   +-->
-// --------+->| cell body |-----------+-->
-//  inputs +->|           |  Axon     +-->
-//         weights
+//            synapses
+//                +-----------+
+// ---input[0]--->o	          |         +--> outputs[0]
+// ---input[0]--->o cell body o---------|--> outputs[1]
+// ---input[n]--->o   soma    |   axon  +--> outputs[n]
+//                +-----------+
+//             weights
 // ----------------------------------------------------------------------------
 
 type Cell struct {
