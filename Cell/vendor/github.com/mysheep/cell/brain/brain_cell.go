@@ -59,32 +59,22 @@ func (c *Cell) Name() string {
 }
 
 func (c *Cell) Update() {
-	c.update()
-}
-
-func (c *Cell) update() {
 	for j := 0; j < len(c.Inputs); j++ {
 		go Synapse(c.Weights[j], c.Inputs[j], c.bodyIn)
 	}
 }
 
 func (c *Cell) AddOutput(ch chan int) {
-	c.addOutput(ch)
-}
-
-func (c *Cell) addOutput(ch chan int) {
 	c.Outputs = append(c.Outputs, ch)
 }
 
 func (c *Cell) AddInput(ch chan int, weight int) {
-	c.addInput(ch, weight)
-}
-
-func (c *Cell) addInput(ch chan int, weight int) {
 	c.Inputs = append(c.Inputs, ch)
 	c.Weights = append(c.Weights, weight)
+
 }
 
+/*
 func (cFr *Cell) ConnectWith(cTo *Cell, weight int) {
 	//
 	//  outputs       inputs
@@ -101,7 +91,7 @@ func (cFr *Cell) ConnectWith(cTo *Cell, weight int) {
 
 	fmt.Println("cell", cFr.Name(), "with cell", cTo.Name(), "connected")
 }
-
+*/
 //
 // DisplayCell has only inputs
 //
@@ -152,4 +142,46 @@ func ConnectBy(from, to Connect, weight int) {
 
 	fmt.Println("cell", from.Name(), "with cell", to.Name(), "connected")
 
+}
+
+//
+// EmitterCell has only outputs
+//
+
+type EmitterCell struct {
+	name    string
+	Outputs []chan int
+}
+
+func (c *EmitterCell) Name() string {
+	return c.name
+}
+
+func (c *EmitterCell) AddInput(ch chan int, weight int /*not used*/) {
+	// Emitter has only outputs
+}
+
+func (c *EmitterCell) AddOutput(ch chan int /*not used*/) {
+	c.Outputs = append(c.Outputs, ch)
+}
+
+func (c *EmitterCell) Update() {
+	// Nothing to update
+}
+
+func (c *EmitterCell) EmitOne() {
+	for _, out := range c.Outputs {
+		out <- 1
+	}
+}
+
+func MakeEmitterCell(name string) *EmitterCell {
+	N := 0
+
+	c := EmitterCell{
+		name:    name,
+		Outputs: make([]chan int, N),
+	}
+
+	return &c
 }

@@ -111,15 +111,16 @@ func main() {
 	c1 := brain.MakeCell("cell_1")
 	c2 := brain.MakeCell("cell_2")
 
-	c1.AddInput(make(chan int), 13) // CONNECT WITH EMITTER CELL
-
 	//  13
 	// -->(c1)      (c2)--->
 
-	c1.ConnectWith(c2, 7)
+	brain.ConnectBy(c1, c2, 7)
 
 	d := brain.MakeDisplayCell("display_1")
 	brain.ConnectBy(c2, d, 1)
+
+	e := brain.MakeEmitterCell("emit_1")
+	brain.ConnectBy(e, c1, 13)
 
 	//  13        7
 	// -->(c1)----->(c2)--->Display
@@ -156,7 +157,7 @@ func main() {
 		},
 		"con": func() {
 			for k := 0; k < 10; k++ {
-				c1.Inputs[0] <- 1
+				e.EmitOne()
 				time.Sleep(50 * time.Millisecond)
 			}
 		},
