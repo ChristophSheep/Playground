@@ -68,10 +68,12 @@ func Console(cmdFns map[string]func()) {
 	printPrompt := func() {
 		fmt.Print(consolePS1)
 	}
-
 	for {
 		printPrompt()
 		cmd, _ := getCmd()
 		invokeCmd(cmd, cmdFns)
+		if cmd == "q" {
+			break
+		}
 	}
 }

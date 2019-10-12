@@ -123,13 +123,13 @@ func main() {
 	//  13
 	// -->(cell1)      (cell2)--->
 
-	brain.Connect(cell1, cell2, 7)
+	brain.ConnectBy(cell1, cell2, 7)
 
 	display1 := brain.MakeDisplayCell("display_1")
-	brain.Connect(cell2, display1, 1)
+	brain.ConnectBy(cell2, display1, 1)
 
 	emitter1 := brain.MakeEmitterCell("emitter_1")
-	brain.Connect(emitter1, cell1, 13)
+	brain.ConnectBy(emitter1, cell1, 13)
 
 	//  13        7
 	// -->(cell1)----->(cell2)--->Display
@@ -150,21 +150,21 @@ func main() {
 	displayB := brain.MakeDisplayCell("display_B")
 	displayC := brain.MakeDisplayCell("display_C")
 
-	brain.Connect(emitterA, cellA, 5)
-	brain.Connect(emitterA, cellB, 3)
-	brain.Connect(emitterA, cellC, -3)
+	brain.ConnectBy(emitterA, cellA, 5)
+	brain.ConnectBy(emitterA, cellB, 3)
+	brain.ConnectBy(emitterA, cellC, -3)
 
-	brain.Connect(emitterB, cellA, -5)
-	brain.Connect(emitterB, cellB, 3)
-	brain.Connect(emitterB, cellC, 10)
+	brain.ConnectBy(emitterB, cellA, -5)
+	brain.ConnectBy(emitterB, cellB, 3)
+	brain.ConnectBy(emitterB, cellC, 10)
 
-	brain.Connect(emitterC, cellA, 5)
-	brain.Connect(emitterC, cellB, 3)
-	brain.Connect(emitterC, cellC, -3)
+	brain.ConnectBy(emitterC, cellA, 5)
+	brain.ConnectBy(emitterC, cellB, 3)
+	brain.ConnectBy(emitterC, cellC, -3)
 
-	brain.Connect(cellA, displayA, 1)
-	brain.Connect(cellB, displayB, 1)
-	brain.Connect(cellC, displayC, 1)
+	brain.ConnectBy(cellA, displayA, 1)
+	brain.ConnectBy(cellB, displayB, 1)
+	brain.ConnectBy(cellC, displayC, 1)
 
 	//
 	// Console Commands
@@ -172,6 +172,7 @@ func main() {
 	cmds := map[string]func(){
 		"quit": func() { done <- true },
 		"exit": func() { done <- true },
+		"q":    func() { done <- true },
 		"emit": func() { inX <- 1; inY <- 2 },
 		"agg": func() {
 			for i := 0; i < len(ins); i++ {
@@ -216,4 +217,6 @@ func main() {
 	waitUntilDone()
 	//
 	// Wait until Done
+
+	fmt.Println("BYE")
 }

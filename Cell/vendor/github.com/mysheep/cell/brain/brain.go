@@ -62,6 +62,8 @@ func Axon(in <-chan int, outs []chan int) {
 	}
 }
 
+type IntChannels []chan int
+
 func Axon2(in <-chan int, outs *[]chan int) {
 	//fmt.Printf("Axon 2 %p \n", outs)
 	for {

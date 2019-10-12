@@ -50,17 +50,12 @@ func (c *Cell) Name() string {
 	return c.name
 }
 
-func (c *Cell) Update() {
-	for j := 0; j < len(c.inputs); j++ {
-		go Synapse(c.weights[j], c.inputs[j], c.bodyIn)
-	}
-}
-
-func (c *Cell) AddOutput(ch chan int) {
+func (c *Cell) OutputConnect(ch chan int) {
 	c.outputs = append(c.outputs, ch)
 }
 
-func (c *Cell) AddInput(ch chan int, weight int) {
+func (c *Cell) InputConnect(ch chan int, weight int) {
 	c.inputs = append(c.inputs, ch)
 	c.weights = append(c.weights, weight)
+	go Synapse(weight, ch, c.bodyIn)
 }

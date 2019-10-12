@@ -19,19 +19,9 @@ func (c *DisplayCell) Name() string {
 	return c.name
 }
 
-func (c *DisplayCell) AddInput(ch chan int, weight int /*not used*/) {
+func (c *DisplayCell) InputConnect(ch chan int, weight int /*not used*/) {
 	c.inputs = append(c.inputs, ch)
-}
-
-func (c *DisplayCell) AddOutput(ch chan int /*not used*/) {
-	// Display prints to console
-}
-
-func (c *DisplayCell) Update() {
-	for _, in := range c.inputs {
-		//fmt.Println("display cell update i:", i)
-		go Display(in, fmt.Sprintf("display '%s'", c.Name()))
-	}
+	go Display(ch, fmt.Sprintf("display '%s'", c.Name()))
 }
 
 func MakeDisplayCell(name string) *DisplayCell {

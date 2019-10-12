@@ -1,27 +1,26 @@
 package brain
 
-import "fmt"
-
 // ----------------------------------------------------------------------------
 // Connect interface between cells
 // ----------------------------------------------------------------------------
 
-type Connecter interface {
-	AddInput(ch chan int, weight int)
-	AddOutput(ch chan int)
-	Update()
+type InputConnector interface {
+	InputConnect(ch chan int, weight int)
+}
+
+type OutputConnector interface {
+	OutputConnect(ch chan int)
+}
+
+type Namer interface {
 	Name() string
 }
 
-func Connect(from, to Connecter, weight int) {
-	ch := make(chan int)
+func ConnectBy(out OutputConnector, in InputConnector, weight int) {
 
-	from.AddOutput(ch)
-	to.AddInput(ch, weight)
+	connection := make(chan int)
+	out.OutputConnect(connection)
+	in.InputConnect(connection, weight)
 
-	from.Update()
-	to.Update()
-
-	fmt.Println(fmt.Sprintf("cell '%s' connected with '%s'", from.Name(), to.Name()))
-
+	//fmt.Println(fmt.Sprintf("cell '%s' connected to '%s'", out.(Namer).Name(), in.(Namer).Name()))
 }

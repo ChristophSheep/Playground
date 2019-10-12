@@ -17,16 +17,8 @@ func (c *EmitterCell) Name() string {
 	return c.name
 }
 
-func (c *EmitterCell) AddInput(ch chan int, weight int /*not used*/) {
-	// Emitter has only outputs
-}
-
-func (c *EmitterCell) AddOutput(ch chan int /*not used*/) {
+func (c *EmitterCell) OutputConnect(ch chan int /*not used*/) {
 	c.outputs = append(c.outputs, ch)
-}
-
-func (c *EmitterCell) Update() {
-	// Nothing to update
 }
 
 func (c *EmitterCell) EmitOne() {
