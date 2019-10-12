@@ -24,17 +24,16 @@ func (c *DisplayCell) AddOutput(ch chan int /*not used*/) {
 }
 
 func (c *DisplayCell) Update() {
-	for j := 0; j < len(c.inputs); j++ {
-		go Display(c.inputs[j], fmt.Sprintf("display %d", j))
+	for _, in := range c.inputs {
+		//fmt.Println("display cell update i:", i)
+		go Display(in, fmt.Sprintf("display '%s'", c.Name()))
 	}
 }
 
 func MakeDisplayCell(name string) *DisplayCell {
-	N := 0
-
 	c := DisplayCell{
 		name:   name,
-		inputs: make([]chan int, N),
+		inputs: make([]chan int, 0),
 	}
 
 	return &c

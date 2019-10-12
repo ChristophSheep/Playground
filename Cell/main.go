@@ -115,10 +115,10 @@ func main() {
 	// Create two cells and connect them
 	//
 
-	fmt.Println("Setup network: 1 emitter + 2 cells + 1 display")
+	fmt.Println("Setup network: 1 emitter + 2 multi cells + 1 display")
 
-	cell1 := brain.MakeCell("cell_1")
-	cell2 := brain.MakeCell("cell_2")
+	cell1 := brain.MakeMultiCell("cell_1")
+	cell2 := brain.MakeMultiCell("cell_2")
 
 	//  13
 	// -->(cell1)      (cell2)--->
@@ -133,6 +133,38 @@ func main() {
 
 	//  13        7
 	// -->(cell1)----->(cell2)--->Display
+
+	//
+	// Exampel with 3 cells from book Manfred Spitzer
+	//
+
+	emitterA := brain.MakeEmitterCell("emitter_A")
+	emitterB := brain.MakeEmitterCell("emitter_B")
+	emitterC := brain.MakeEmitterCell("emitter_C")
+
+	cellA := brain.MakeMultiCell("cell_A")
+	cellB := brain.MakeMultiCell("cell_B")
+	cellC := brain.MakeMultiCell("cell_C")
+
+	displayA := brain.MakeDisplayCell("display_A")
+	displayB := brain.MakeDisplayCell("display_B")
+	displayC := brain.MakeDisplayCell("display_C")
+
+	brain.Connect(emitterA, cellA, 5)
+	brain.Connect(emitterA, cellB, 3)
+	brain.Connect(emitterA, cellC, -3)
+
+	brain.Connect(emitterB, cellA, -5)
+	brain.Connect(emitterB, cellB, 3)
+	brain.Connect(emitterB, cellC, 10)
+
+	brain.Connect(emitterC, cellA, 5)
+	brain.Connect(emitterC, cellB, 3)
+	brain.Connect(emitterC, cellC, -3)
+
+	brain.Connect(cellA, displayA, 1)
+	brain.Connect(cellB, displayB, 1)
+	brain.Connect(cellC, displayC, 1)
 
 	//
 	// Console Commands
@@ -169,6 +201,11 @@ func main() {
 				emitter1.EmitOne()
 				time.Sleep(50 * time.Millisecond)
 			}
+		},
+		"ex1": func() {
+			emitterA.EmitOne()
+			emitterB.EmitOne()
+			emitterC.EmitOne()
 		},
 	}
 

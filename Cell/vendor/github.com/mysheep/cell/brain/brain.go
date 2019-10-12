@@ -26,10 +26,14 @@ var (
 )
 
 func Soma(agg <-chan int, out chan<- int) {
-	Body(agg, out)
+	body(agg, out, 8)
 }
 
 func Body(agg <-chan int, out chan<- int) {
+	body(agg, out, THRESHOLD)
+}
+
+func body(agg <-chan int, out chan<- int, threshold int) {
 
 	sum := 0
 
@@ -37,8 +41,8 @@ func Body(agg <-chan int, out chan<- int) {
 		select {
 		case val := <-agg:
 			sum = sum + val
-			if sum > THRESHOLD {
-				for ; sum > THRESHOLD; sum = sum - THRESHOLD {
+			if sum > threshold {
+				for ; sum > threshold; sum = sum - threshold {
 					out <- 1
 				}
 			} else {

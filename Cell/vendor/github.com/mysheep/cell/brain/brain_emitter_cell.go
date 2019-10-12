@@ -32,11 +32,9 @@ func (c *EmitterCell) EmitOne() {
 }
 
 func MakeEmitterCell(name string) *EmitterCell {
-	N := 0
-
 	c := EmitterCell{
 		name:    name,
-		outputs: make([]chan int, N),
+		outputs: make([]chan int, 0),
 	}
 
 	return &c

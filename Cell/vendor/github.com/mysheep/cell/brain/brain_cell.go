@@ -23,16 +23,14 @@ type Cell struct {
 	axIn   chan int
 }
 
-func MakeCell(name string) *Cell {
-
-	N := 0 // No input per default for now
+func MakeMultiCell(name string) *Cell {
 
 	c := Cell{
 		name: name,
 
-		inputs:  make([]chan int, N),
-		weights: make([]int, N),
-		outputs: make([]chan int, N),
+		inputs:  make([]chan int, 0),
+		weights: make([]int, 0),
+		outputs: make([]chan int, 0),
 
 		bodyIn: make(chan int, 100), // buffered, because many pipe in
 		axIn:   make(chan int),
