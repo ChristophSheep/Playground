@@ -6,6 +6,10 @@ import "fmt"
 // DisplayCell has only inputs
 // ----------------------------------------------------------------------------
 
+//  inputs  +---------+
+// -------->| Display |
+//          +---------+
+
 type DisplayCell struct {
 	name   string
 	inputs []chan int
@@ -35,6 +39,5 @@ func MakeDisplayCell(name string) *DisplayCell {
 		name:   name,
 		inputs: make([]chan int, 0),
 	}
-
 	return &c
 }

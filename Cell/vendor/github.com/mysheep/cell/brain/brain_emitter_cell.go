@@ -4,6 +4,10 @@ package brain
 // EmitterCell has only outputs
 // ----------------------------------------------------------------------------
 
+// +---------+ outputs
+// | Emitter +--------->
+// +---------+
+
 type EmitterCell struct {
 	name    string
 	outputs []chan int
