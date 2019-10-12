@@ -22,8 +22,12 @@ func Synapse(weight int, in <-chan int, out chan<- int) func() {
 }
 
 var (
-	MUS = 10
+	THRESHOLD = 10
 )
+
+func Soma(agg <-chan int, out chan<- int) {
+	Body(agg, out)
+}
 
 func Body(agg <-chan int, out chan<- int) {
 
@@ -33,8 +37,8 @@ func Body(agg <-chan int, out chan<- int) {
 		select {
 		case val := <-agg:
 			sum = sum + val
-			if sum > MUS {
-				for ; sum > MUS; sum = sum - MUS {
+			if sum > THRESHOLD {
+				for ; sum > THRESHOLD; sum = sum - THRESHOLD {
 					out <- 1
 				}
 			} else {
@@ -59,6 +63,13 @@ func Axon2(in <-chan int, outs *[]chan int) {
 		for _, out := range *outs {
 			out <- val
 		}
+	}
+}
+
+func DisplayM(ins *[]chan int, name string) {
+	for i, val := range *ins {
+		text := fmt.Sprintf("display %s channel %d", name, i)
+		fmt.Println(time.Now().Format("15:04:05.000"), text, "val:", val)
 	}
 }
 

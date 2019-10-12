@@ -4,6 +4,13 @@ import (
 	"fmt"
 )
 
+type Connect interface {
+	AddInput(ch chan int, weight int)
+	AddOutput(ch chan int)
+	Update()
+	Name() string
+}
+
 //         Synapses
 //  inputs +->|	          | outputs   +-->
 // --------+->| cell body |-----------+-->
@@ -13,7 +20,8 @@ import (
 type Cell struct {
 
 	// public
-	Name    string
+	name string
+
 	Inputs  []chan int
 	Weights []int
 	Outputs []chan int
@@ -28,7 +36,7 @@ func MakeCell(name string) *Cell {
 	N := 0 // No input per default for now
 
 	c := Cell{
-		Name:        name,
+		name:        name,
 		Inputs:      make([]chan int, N),
 		Weights:     make([]int, N),
 		Outputs:     make([]chan int, N),
@@ -40,14 +48,18 @@ func MakeCell(name string) *Cell {
 		go Synapse(c.Weights[j], c.Inputs[j], c.bodyIn)
 	}
 
-	go Body(c.bodyIn, c.cellOutAxIn)
+	go Soma(c.bodyIn, c.cellOutAxIn)
 	go Axon2(c.cellOutAxIn, &c.Outputs)
 
 	return &c
 }
 
-func CellByName(name string) *Cell {
-	return &Cell{}
+func (c *Cell) Name() string {
+	return c.name
+}
+
+func (c *Cell) Update() {
+	c.update()
 }
 
 func (c *Cell) update() {
@@ -84,8 +96,60 @@ func (cFr *Cell) ConnectWith(cTo *Cell, weight int) {
 	cFr.addOutput(ch)
 	cTo.addInput(ch, weight)
 
-	cFr.update()
-	cTo.update()
+	cFr.update() // TODO: kill old funcs
+	cTo.update() // TODO: kill old funcs
 
-	fmt.Println("cell", cFr.Name, "with cell", cTo.Name, "connected")
+	fmt.Println("cell", cFr.Name(), "with cell", cTo.Name(), "connected")
+}
+
+//
+// DisplayCell has only inputs
+//
+
+type DisplayCell struct {
+	name   string
+	Inputs []chan int
+}
+
+func (c *DisplayCell) Name() string {
+	return c.name
+}
+
+func (c *DisplayCell) AddInput(ch chan int, weight int /*not used*/) {
+	c.Inputs = append(c.Inputs, ch)
+	fmt.Println("display cell len(inputs)", len(c.Inputs))
+}
+
+func (c *DisplayCell) AddOutput(ch chan int /*not used*/) {
+	// Display prints to console
+}
+
+func (c *DisplayCell) Update() {
+	for j := 0; j < len(c.Inputs); j++ {
+		go Display(c.Inputs[j], fmt.Sprintf("display %d", j))
+	}
+}
+
+func MakeDisplayCell(name string) *DisplayCell {
+	N := 0
+
+	c := DisplayCell{
+		name:   name,
+		Inputs: make([]chan int, N),
+	}
+
+	return &c
+}
+
+func ConnectBy(from, to Connect, weight int) {
+	ch := make(chan int)
+
+	from.AddOutput(ch)
+	to.AddInput(ch, weight)
+
+	from.Update()
+	to.Update()
+
+	fmt.Println("cell", from.Name(), "with cell", to.Name(), "connected")
+
 }

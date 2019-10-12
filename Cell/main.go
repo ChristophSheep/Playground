@@ -105,24 +105,21 @@ func main() {
 	go brain.Axon(axIn, axOuts)
 
 	//
-	// Create to cell and connect them
+	// Create two cells and connect them
 	//
 
 	c1 := brain.MakeCell("cell_1")
 	c2 := brain.MakeCell("cell_2")
 
-	c1ch1 := make(chan int)
-	c2out1 := make(chan int)
-
-	c1.AddInput(c1ch1, 13)
-	c2.AddOutput(c2out1)
+	c1.AddInput(make(chan int), 13) // CONNECT WITH EMITTER CELL
 
 	//  13
 	// -->(c1)      (c2)--->
 
 	c1.ConnectWith(c2, 7)
-	outIdx := 0
-	go brain.Display(c2.Outputs[outIdx], fmt.Sprintf("%s.output[%d]", c2.Name, outIdx))
+
+	d := brain.MakeDisplayCell("display_1")
+	brain.ConnectBy(c2, d, 1)
 
 	//  13        7
 	// -->(c1)----->(c2)--->Display
@@ -160,6 +157,7 @@ func main() {
 		"con": func() {
 			for k := 0; k < 10; k++ {
 				c1.Inputs[0] <- 1
+				time.Sleep(50 * time.Millisecond)
 			}
 		},
 	}
