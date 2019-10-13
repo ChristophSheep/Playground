@@ -1,0 +1,11 @@
+# TODOS
+
+## Others
+
+- More examples
+- Find out how to changes weights and learning
+- Do not trust what you already know, seek always a better way
+
+## Ideas
+
+- Add scripting language to script setup networks on the fly

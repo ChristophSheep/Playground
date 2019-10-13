@@ -108,7 +108,7 @@ func main() {
 		axOuts[j] = make(chan int)
 		go brain.Writer(axOuts[j])
 	}
-	go brain.Body(bIn, axIn)
+	go brain.Body(bIn, axIn, brain.THRESHOLD)
 	go brain.Axon(axIn, axOuts)
 
 	//
@@ -135,8 +135,26 @@ func main() {
 	// -->(cell1)----->(cell2)--->Display
 
 	//
-	// Exampel with 3 cells from book Manfred Spitzer
+	// Example with 3 cells from book Manfred Spitzer
 	//
+
+	//   +--------+                   +--------+
+	//   |        o------------A--( 5)>        |    +-----------+
+	//   | Emit_A o---+    +---B--( 3)> Cell_A o----> Display_C |
+	//   |        o-+ |    | +-C--(~3)>        |    +-----------+
+	//   +--------+ | |    | |        +--------+
+	//
+	//   +--------+   |    |         +--------+
+	//   |        o---+    +---A--( 5)>        |    +-----------+
+	//   | Emit_B o------------B--( 3)> Cell_B o----> Display_B |
+	//   |        o---+    +---C--(10)>        |    +-----------+
+	//   +--------+   |    |         +--------+
+	//
+	//   +--------+ | |    | |        +--------+
+	//   |        o-+ |    | +-A--( 5)>        |    +-----------+
+	//   | Emit_C o---+    +---B--( 3)> Cell_C o----> Display_C |
+	//   |        o------------C--(~3)>        |    +-----------+
+	//   +--------+                   +--------+
 
 	emitterA := brain.MakeEmitterCell("emitter_A")
 	emitterB := brain.MakeEmitterCell("emitter_B")

@@ -25,11 +25,7 @@ var (
 	THRESHOLD = 10
 )
 
-func Body(agg <-chan int, out chan<- int) {
-	body(agg, out, THRESHOLD)
-}
-
-func body(agg <-chan int, out chan<- int, threshold int) {
+func Body(agg <-chan int, out chan<- int, threshold int) {
 
 	sum := 0
 
