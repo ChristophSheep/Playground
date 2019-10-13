@@ -25,9 +25,8 @@ func (c *DisplayCell) InputConnect(ch chan int, weight int /*not used*/) {
 }
 
 func MakeDisplayCell(name string) *DisplayCell {
-	c := DisplayCell{
+	return &DisplayCell{
 		name:   name,
 		inputs: make([]chan int, 0),
 	}
-	return &c
 }

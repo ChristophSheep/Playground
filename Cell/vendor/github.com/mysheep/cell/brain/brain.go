@@ -25,10 +25,6 @@ var (
 	THRESHOLD = 10
 )
 
-func Soma(agg <-chan int, out chan<- int) {
-	body(agg, out, 8)
-}
-
 func Body(agg <-chan int, out chan<- int) {
 	body(agg, out, THRESHOLD)
 }
@@ -57,18 +53,6 @@ func Axon(in <-chan int, outs []chan int) {
 	for {
 		val := <-in
 		for _, out := range outs {
-			out <- val
-		}
-	}
-}
-
-type IntChannels []chan int
-
-func Axon2(in <-chan int, outs *[]chan int) {
-	//fmt.Printf("Axon 2 %p \n", outs)
-	for {
-		val := <-in
-		for _, out := range *outs {
 			out <- val
 		}
 	}

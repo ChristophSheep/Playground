@@ -28,10 +28,8 @@ func (c *EmitterCell) EmitOne() {
 }
 
 func MakeEmitterCell(name string) *EmitterCell {
-	c := EmitterCell{
+	return &EmitterCell{
 		name:    name,
 		outputs: make([]chan int, 0),
 	}
-
-	return &c
 }

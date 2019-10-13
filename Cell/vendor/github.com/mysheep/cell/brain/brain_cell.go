@@ -19,11 +19,11 @@ type Cell struct {
 	weights []int
 	outputs []chan int
 
-	bodyIn chan int
-	axIn   chan int
+	bodyIn  chan int
+	bodyOut chan int
 }
 
-func MakeMultiCell(name string) *Cell {
+func MakeMultiCell(name string, threshold int) *Cell {
 
 	c := Cell{
 		name: name,
@@ -32,18 +32,55 @@ func MakeMultiCell(name string) *Cell {
 		weights: make([]int, 0),
 		outputs: make([]chan int, 0),
 
-		bodyIn: make(chan int, 100), // buffered, because many pipe in
-		axIn:   make(chan int),
+		bodyIn:  make(chan int, 100), // buffered, because many pipe in
+		bodyOut: make(chan int),
 	}
 
-	for j := 0; j < len(c.inputs); j++ {
-		go Synapse(c.weights[j], c.inputs[j], c.bodyIn)
-	}
-
-	go Soma(c.bodyIn, c.axIn)
-	go Axon2(c.axIn, &c.outputs) // TODO: WHY THIS NEED TO BE A POINTERS ??
+	go soma(&c, threshold)
+	go axon(&c)
 
 	return &c
+}
+
+func soma(c *Cell, threshold int) {
+
+	sum := 0
+
+	var sendOut = func() {
+
+		var fireUntil = func() {
+			for ; sum > threshold; sum = sum - threshold {
+				c.bodyOut <- 1
+			}
+		}
+
+		var rest = func() {
+			//c.bodyOut <- 0 // TODO: Rethink - fire a ZERO ??
+		}
+
+		if sum > threshold {
+			fireUntil()
+		} else {
+			rest()
+		}
+	}
+
+	for {
+		select {
+		case val := <-c.bodyIn:
+			sum = sum + val
+			sendOut()
+		}
+	}
+}
+
+func axon(c *Cell) {
+	for {
+		val := <-c.bodyOut
+		for _, out := range c.outputs {
+			out <- val
+		}
+	}
 }
 
 func (c *Cell) Name() string {

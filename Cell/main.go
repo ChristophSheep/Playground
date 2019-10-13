@@ -117,8 +117,8 @@ func main() {
 
 	fmt.Println("Setup network: 1 emitter + 2 multi cells + 1 display")
 
-	cell1 := brain.MakeMultiCell("cell_1")
-	cell2 := brain.MakeMultiCell("cell_2")
+	cell1 := brain.MakeMultiCell("cell_1", 10)
+	cell2 := brain.MakeMultiCell("cell_2", 10)
 
 	//  13
 	// -->(cell1)      (cell2)--->
@@ -142,9 +142,9 @@ func main() {
 	emitterB := brain.MakeEmitterCell("emitter_B")
 	emitterC := brain.MakeEmitterCell("emitter_C")
 
-	cellA := brain.MakeMultiCell("cell_A")
-	cellB := brain.MakeMultiCell("cell_B")
-	cellC := brain.MakeMultiCell("cell_C")
+	cellA := brain.MakeMultiCell("cell_A", 8)
+	cellB := brain.MakeMultiCell("cell_B", 8)
+	cellC := brain.MakeMultiCell("cell_C", 8)
 
 	displayA := brain.MakeDisplayCell("display_A")
 	displayB := brain.MakeDisplayCell("display_B")
