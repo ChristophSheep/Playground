@@ -81,12 +81,17 @@ func main() {
 	// Cell with weighted Synapses, Body and Axon
 	//
 
-	//  synapse
-	//  ------> w1  / ----- \
-	//             |         |  axon
-	//  ------> w2 |  cell   |-------->
-	//             |         |
-	//  ------> w5  \ ----- /
+	//     dendride
+	//   	          +----------+
+	//   0 +------->w1|          |
+	//   	          |          |
+	//   1 +------->w2|   cell   |  axon
+	//   	          |  (soma)  o------->
+	//         ...    |   body   |
+	//   	          |          |
+	//   n +------->wn|          |
+	//   	          +----------+
+	//            synapses
 
 	S := 5
 
