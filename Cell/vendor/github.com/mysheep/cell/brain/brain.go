@@ -62,12 +62,12 @@ func Display(in <-chan int, text string) {
 }
 
 var (
-	filename = "cell_data.txt"
+	filenameTemplate = "cell_data_%s.txt"
 )
 
-func Writer(in <-chan int) {
+func Writer(in <-chan int, name string) {
 
-	file, err := os.Create(filename)
+	file, err := os.Create(fmt.Sprintf(filenameTemplate, name))
 	if err != nil {
 		return
 	}

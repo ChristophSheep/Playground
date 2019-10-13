@@ -111,7 +111,7 @@ func main() {
 
 	for j := 0; j < A; j++ {
 		axOuts[j] = make(chan int)
-		go brain.Writer(axOuts[j])
+		go brain.Writer(axOuts[j], fmt.Sprintf("out%d", j))
 	}
 	go brain.Body(bIn, axIn, brain.THRESHOLD)
 	go brain.Axon(axIn, axOuts)
