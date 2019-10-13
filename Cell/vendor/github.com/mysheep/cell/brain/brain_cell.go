@@ -83,6 +83,14 @@ func axon(c *Cell) {
 	}
 }
 
+func (c *Cell) SetWeight(i int, weight int) {
+	c.weights[i] = weight
+}
+
+func (c *Cell) Weights() []int {
+	return c.weights
+}
+
 func (c *Cell) Name() string {
 	return c.name
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/mysheep/cell"
 	"github.com/mysheep/cell/brain"
@@ -17,28 +16,38 @@ func main() {
 	// Setup Network
 	//
 
-	const SIZE = 64
-	const OBJECTS = 700
-	const THRESHOLD = 32
+	fmt.Printf("size is set to %d\n", size)
 
-	retinaCells := make([]*brain.EmitterCell, SIZE*SIZE)
-	objectCells := make([]*brain.Cell, OBJECTS)
-	displayCells := make([]*brain.DisplayCell, OBJECTS)
+	files, err := getFiles(getFolder())
+
+	if err != nil {
+		return
+	}
+
+	var countObjects = len(files)
+	const THRESHOLD = 256
+
+	fmt.Printf("%d objects found\n", countObjects)
+	fmt.Printf("Cell threshold is set to %d\n", THRESHOLD)
+
+	retinaCells := make([]*brain.EmitterCell, size*size)
+	objectCells := make([]*brain.Cell, countObjects)
+	displayCells := make([]*brain.DisplayCell, countObjects)
 
 	fmt.Printf("Create %d retina cells\n", len(retinaCells))
 
 	// Create retina cells
 	//
 	for i, _ := range retinaCells {
-		retinaCells[i] = brain.MakeEmitterCell(fmt.Sprintf("retina%d", i))
+		retinaCells[i] = brain.MakeEmitterCell(fmt.Sprintf("retina%2d", i))
 	}
 
 	fmt.Printf("Create %d object and display cells\n", len(objectCells))
 
 	// Create object and display cells
 	for j, _ := range objectCells {
-		objectCells[j] = brain.MakeMultiCell(fmt.Sprintf("cell%d", j), THRESHOLD) // TODO: Object Name
-		displayCells[j] = brain.MakeDisplayCell(fmt.Sprintf("display%d", j))      // TODO: Object Name
+		objectCells[j] = brain.MakeMultiCell(files[j], THRESHOLD)
+		displayCells[j] = brain.MakeDisplayCell(files[j])
 		brain.ConnectBy(objectCells[j], displayCells[j], 1)
 	}
 
@@ -48,26 +57,42 @@ func main() {
 		brain.ConnectBy(objectCells[j], displayCells[j], 1)
 	}
 
-	fmt.Printf("Connect %d retina with objects cells \n", len(retinaCells)*len(objectCells))
+	fmt.Printf("Connect retina cells with countObjects cells - %d connections\n", len(retinaCells)*len(objectCells))
 
 	// Connect retina cells with object cells
 	//
 	for r, _ := range retinaCells {
-
-		if int(math.Mod(float64(r), 100)) == 0 {
-			fmt.Printf("%d ", r)
-		}
-
 		for o, _ := range objectCells {
-			brain.ConnectBy(retinaCells[r], objectCells[o], 0)
+			brain.ConnectBy(retinaCells[r], objectCells[o], 1)
 		}
 	}
 
 	// Set weights of object cells
 	//
-	for o, _ := range objectCells {
-		o = o // TODO
+	for i, _ := range objectCells {
+
+		name := files[i]
+
+		fileName := getFilename(files[i])
+
+		fmt.Println("name", name)
+
+		img, err := getImage(fileName)
+
+		if err == nil {
+			bits, err := getPixels(img)
+			if err == nil {
+				for j, bit := range bits {
+					if bit {
+						objectCells[i].SetWeight(j, 1)
+					} else {
+						objectCells[i].SetWeight(j, 0)
+					}
+				}
+			}
+		}
 	}
+
 	//
 	// Console Commands
 	//
@@ -75,13 +100,12 @@ func main() {
 		"quit": func() { done <- true },
 		"exit": func() { done <- true },
 		"q":    func() { done <- true },
-		"show": func() {
-			for i, _ := range retinaCells {
-				retinaCells[i].EmitOne()
-				if int(math.Mod(float64(i), 100)) == 0 {
-					fmt.Printf("%d ", i)
+		"obj1": func() {
+			for i, w := range objectCells[0].Weights() {
+
+				if w > 0 {
+					retinaCells[i].EmitOne()
 				}
-		
 			}
 		},
 	}
