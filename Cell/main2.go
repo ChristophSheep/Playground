@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/mysheep/cell"
@@ -40,7 +41,9 @@ func getWeights(name string) ([]float64, error) {
 	weights := make([]float64, len(bits))
 	weight := float64(len(bits)) / float64(count)
 
-	//	fmt.Printf("%s: count %d weight %d\n", name, count, weight)
+	//
+	// TODO : negative Weight values to REPRESENT NOT
+	//
 
 	for i, bit := range bits {
 		if bit {
@@ -50,6 +53,22 @@ func getWeights(name string) ([]float64, error) {
 
 	return weights, nil
 
+}
+
+func getAllWeights(names []string) [][]float64 {
+
+	wweights := make([][]float64, len(names))
+
+	for j, name := range names {
+		fmt.Println(j, ":", name)
+		weights, err := getWeights(name)
+		if err != nil {
+			panic(fmt.Sprint("Count not get weights from file ", name))
+		}
+		wweights[j] = weights
+	}
+
+	return wweights
 }
 
 func main() {
@@ -96,31 +115,21 @@ func main() {
 		brain.ConnectBy(objectCells[j], displayCells[j], float64(1.0))
 	}
 
+	fmt.Println(len(displayCells), "display created")
 	fmt.Printf("Connect %d object cells with display cells\n", len(objectCells))
-
-	for j, _ := range objectCells {
-		// TODO: MassConnect or BulkConnect(0..j)
-		// TODO: without append
-		brain.ConnectBy(objectCells[j], displayCells[j], float64(1.0))
-	}
-
 	fmt.Printf("Connect retina cells with countObjects cells - %d connections\n", len(retinaCells)*len(objectCells))
 
-	wweights := make([][]float64, len(objectCells))
-
-	for j, _ := range objectCells {
-		name := files[j]
-		weights, err := getWeights(name)
-		if err != nil {
-			panic(fmt.Sprint("Count not get weights from file ", name))
-		}
-		wweights[j] = weights
-	}
+	wweights := getAllWeights(files)
 
 	// Connect retina cells with object cells
 	//
-	for r, _ := range retinaCells {
-		for o, _ := range objectCells {
+	for o, _ := range objectCells {
+
+		if math.Mod(float64(o), float64(200)) == 0.0 {
+			fmt.Println(fmt.Sprintf("Connect %d of %d", o, len(objectCells)))
+		}
+
+		for r, _ := range retinaCells {
 			// TODO: MassConnect without append
 			weight := wweights[o][r]
 			brain.ConnectBy(retinaCells[r], objectCells[o], weight)
@@ -137,12 +146,16 @@ func main() {
 		"obj": func(params []string) {
 			i, err := strconv.Atoi(params[0])
 			if err == nil {
+				fmt.Println("Show", "'"+files[i]+"'", "to network .. Answer?")
 
+				// TODO: Make func
 				for j, w := range objectCells[i].Weights() {
 					if w > 0 {
 						retinaCells[j].EmitOne()
 					}
 				}
+
+				// TODO: Reset
 			}
 		},
 		"ws": func(params []string) {

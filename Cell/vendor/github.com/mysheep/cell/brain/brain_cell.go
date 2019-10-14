@@ -44,7 +44,7 @@ func MakeMultiCell(name string, threshold int) *Cell {
 
 func soma(c *Cell, threshold int) {
 
-	sum := float64(0.0)
+	sum := 0.0
 
 	var sendOut = func() {
 

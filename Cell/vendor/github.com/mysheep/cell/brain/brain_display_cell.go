@@ -21,7 +21,7 @@ func (c *DisplayCell) Name() string {
 
 func (c *DisplayCell) InputConnect(ch chan int, weight float64 /*not used*/) {
 	c.inputs = append(c.inputs, ch)
-	go Display(ch, fmt.Sprintf("display '%s' %p", c.Name(), &c))
+	go Display(ch, fmt.Sprintf("Cell '%s' has fired", c.Name()))
 }
 
 func MakeDisplayCell(name string) *DisplayCell {
