@@ -16,10 +16,10 @@ type Cell struct {
 	name string
 
 	inputs  []chan int
-	weights []int
+	weights []float64
 	outputs []chan int
 
-	bodyIn  chan int
+	bodyIn  chan float64
 	bodyOut chan int
 }
 
@@ -29,10 +29,10 @@ func MakeMultiCell(name string, threshold int) *Cell {
 		name: name,
 
 		inputs:  make([]chan int, 0),
-		weights: make([]int, 0),
+		weights: make([]float64, 0),
 		outputs: make([]chan int, 0),
 
-		bodyIn:  make(chan int, 100), // buffered, because many pipe in
+		bodyIn:  make(chan float64, 100), // buffered, because many pipe in
 		bodyOut: make(chan int),
 	}
 
@@ -44,12 +44,12 @@ func MakeMultiCell(name string, threshold int) *Cell {
 
 func soma(c *Cell, threshold int) {
 
-	sum := 0
+	sum := float64(0.0)
 
 	var sendOut = func() {
 
 		var fireUntil = func() {
-			for ; sum > threshold; sum = sum - threshold {
+			for ; sum >= float64(threshold); sum = sum - float64(threshold) {
 				c.bodyOut <- 1
 			}
 		}
@@ -58,7 +58,7 @@ func soma(c *Cell, threshold int) {
 			//c.bodyOut <- 0 // TODO: Rethink - fire a ZERO ??
 		}
 
-		if sum > threshold {
+		if sum > float64(threshold) {
 			fireUntil()
 		} else {
 			rest()
@@ -83,11 +83,11 @@ func axon(c *Cell) {
 	}
 }
 
-func (c *Cell) SetWeight(i int, weight int) {
+func (c *Cell) SetWeight(i int, weight float64) {
 	c.weights[i] = weight
 }
 
-func (c *Cell) Weights() []int {
+func (c *Cell) Weights() []float64 {
 	return c.weights
 }
 
@@ -99,7 +99,7 @@ func (c *Cell) OutputConnect(ch chan int) {
 	c.outputs = append(c.outputs, ch)
 }
 
-func (c *Cell) InputConnect(ch chan int, weight int) {
+func (c *Cell) InputConnect(ch chan int, weight float64) {
 	c.inputs = append(c.inputs, ch)
 	c.weights = append(c.weights, weight)
 	go Synapse(weight, ch, c.bodyIn)

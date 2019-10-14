@@ -5,7 +5,7 @@ package brain
 // ----------------------------------------------------------------------------
 
 type InputConnector interface {
-	InputConnect(ch chan int, weight int)
+	InputConnect(ch chan int, weight float64)
 }
 
 type OutputConnector interface {
@@ -16,7 +16,7 @@ type Namer interface {
 	Name() string
 }
 
-func ConnectBy(out OutputConnector, in InputConnector, weight int) {
+func ConnectBy(out OutputConnector, in InputConnector, weight float64) {
 
 	connection := make(chan int)
 	out.OutputConnect(connection)

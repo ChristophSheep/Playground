@@ -9,11 +9,11 @@ import (
 
 // TODO: see integer.Aggregate to work with a list of input channels
 
-func Synapse(weight int, in <-chan int, out chan<- int) func() {
+func Synapse(weight float64, in <-chan int, out chan<- float64) func() {
 
 	for {
 		signal := <-in
-		val := 0
+		val := float64(0.0)
 		if signal > 0 {
 			val = weight
 		}

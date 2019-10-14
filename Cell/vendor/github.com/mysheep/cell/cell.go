@@ -35,7 +35,7 @@ func Console2(cmdFns map[string]func()) {
 
 }
 
-func Console(cmdFns map[string]func()) {
+func Console(cmdFns map[string]func([]string)) {
 
 	reader := bufio.NewReader(os.Stdin)
 
@@ -51,11 +51,14 @@ func Console(cmdFns map[string]func()) {
 		}
 	}
 
-	invokeCmd := func(cmd string, cmdFns map[string]func()) {
-		_, exists := cmdFns[cmd]
+	invokeCmd := func(cmd string, cmdFns map[string]func([]string)) {
+		xs := strings.Split(cmd, " ")
+		cmd = xs[0]
+		_, exists := cmdFns[xs[0]]
 		if exists {
+			params := xs[1:]
 			fnCmd := cmdFns[cmd]
-			fnCmd()
+			fnCmd(params)
 		} else {
 			fmt.Printf("'%s' Command not found!", cmd)
 			fmt.Println()
