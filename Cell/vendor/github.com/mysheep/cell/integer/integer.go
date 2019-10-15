@@ -144,13 +144,8 @@ func MakeDynAgg(ins *[]chan int, out chan int) (func(chan int), func()) {
 		}
 	}
 
-	var aggFn = func() {
-		for {
-			select {
-			case val := <-agg:
-				out <- val
-			}
-		}
+	for i, in := range *ins {
+		go inFn(i, in)
 	}
 
 	var addFn = func(in chan int) {
@@ -159,8 +154,13 @@ func MakeDynAgg(ins *[]chan int, out chan int) (func(chan int), func()) {
 		go inFn(i, in)
 	}
 
-	for i, in := range *ins {
-		go inFn(i, in)
+	var aggFn = func() {
+		for {
+			select {
+			case val := <-agg:
+				out <- val
+			}
+		}
 	}
 
 	return addFn, aggFn

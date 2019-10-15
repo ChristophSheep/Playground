@@ -109,6 +109,7 @@ func main() {
 	fmt.Printf("Create %d object and display cells\n", len(objectCells))
 
 	// Create object and display cells
+	//
 	for j, _ := range objectCells {
 		objectCells[j] = brain.MakeMultiCell(files[j], THRESHOLD)
 		displayCells[j] = brain.MakeDisplayCell(files[j])
@@ -143,7 +144,7 @@ func main() {
 		"quit": func(params []string) { done <- true },
 		"exit": func(params []string) { done <- true },
 		"q":    func(params []string) { done <- true },
-		"obj": func(params []string) {
+		"see": func(params []string) {
 			i, err := strconv.Atoi(params[0])
 			if err == nil {
 				fmt.Println("Show", "'"+files[i]+"'", "to network .. Answer?")
