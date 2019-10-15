@@ -17,7 +17,7 @@ func print(ys []int) {
 	fmt.Println()
 }
 
-func main2() {
+func main() {
 
 	//
 	//  created with http://asciiflow.com/
@@ -95,13 +95,13 @@ func main2() {
 
 	S := 5
 
-	bIn := make(chan int, 100) // buffered body input for aggretion of all synopses
+	bIn := make(chan float64, 100) // buffered body input for aggretion of all synapses
 	sIns := make([]chan int, S)
-	weights := make([]int, S)
+	weights := make([]float64, S)
 
 	for j := 0; j < S; j++ {
 		sIns[j] = make(chan int)
-		weights[j] = rand.Intn(7)
+		weights[j] = float64(rand.Intn(7))
 		go brain.Synapse(weights[j], sIns[j], bIn)
 	}
 
@@ -192,41 +192,41 @@ func main2() {
 	//
 	// Console Commands
 	//
-	cmds := map[string]func(){
-		"quit": func() { done <- true },
-		"exit": func() { done <- true },
-		"q":    func() { done <- true },
-		"emit": func() { inX <- 1; inY <- 2 },
-		"agg": func() {
+	cmds := map[string]func([]string){
+		"quit": func(params []string) { done <- true },
+		"exit": func(params []string) { done <- true },
+		"q":    func(params []string) { done <- true },
+		"emit": func(params []string) { inX <- 1; inY <- 2 },
+		"agg": func(params []string) {
 			for i := 0; i < len(ins); i++ {
 				fmt.Println("send", i)
 				ins[i] <- i
 			}
 		},
-		"add": func() {
+		"add": func(params []string) {
 			addOneFn()
 			fmt.Println("add", len(ins), "ins")
 		},
-		"add10": func() {
+		"add10": func(params []string) {
 			N := 10
 			for i := 0; i < N; i++ {
 				addOneFn()
 			}
 		},
-		"cell": func() {
+		"cell": func(params []string) {
 			for ii := 0; ii < 100; ii++ {
 				i := rand.Intn(S)
 				sIns[i] <- i
 				time.Sleep(50 * time.Millisecond)
 			}
 		},
-		"con": func() {
+		"con": func(params []string) {
 			for k := 0; k < 10; k++ {
 				emitter1.EmitOne()
 				time.Sleep(50 * time.Millisecond)
 			}
 		},
-		"ex1": func() {
+		"ex1": func(params []string) {
 			emitterA.EmitOne()
 			emitterB.EmitOne()
 			emitterC.EmitOne()

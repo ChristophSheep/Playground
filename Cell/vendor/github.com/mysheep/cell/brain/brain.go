@@ -49,12 +49,12 @@ func Synapse(weight float64, in <-chan int, out chan<- float64) func() {
 }
 
 var (
-	THRESHOLD = 10
+	THRESHOLD = 10.0
 )
 
-func Body(agg <-chan int, out chan<- int, threshold int) {
+func Body(agg <-chan float64, out chan<- int, threshold float64) {
 
-	sum := 0
+	sum := 0.0
 
 	for {
 		select {

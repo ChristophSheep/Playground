@@ -46,6 +46,7 @@ func Console(cmdFns map[string]func([]string)) {
 	}
 
 	printHelp := func() {
+		fmt.Println("Available commands:")
 		for cmdFn := range cmdFns {
 			fmt.Println("-", cmdFn)
 		}
@@ -63,7 +64,6 @@ func Console(cmdFns map[string]func([]string)) {
 			fmt.Printf("'%s' Command not found!", cmd)
 			fmt.Println()
 			fmt.Println()
-			fmt.Println("Available commands:")
 			printHelp()
 		}
 	}
@@ -71,6 +71,9 @@ func Console(cmdFns map[string]func([]string)) {
 	printPrompt := func() {
 		fmt.Print(consolePS1)
 	}
+
+	printHelp()
+
 	for {
 		printPrompt()
 		cmd, _ := getCmd()

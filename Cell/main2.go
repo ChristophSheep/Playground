@@ -95,7 +95,7 @@ func main() {
 	fmt.Printf("Cell threshold is set to %d\n", THRESHOLD)
 
 	retinaCells := make([]*brain.EmitterCell, size*size)
-	objectCells := make([]*brain.Cell, countObjects)
+	objectCells := make([]*brain.MultiCell, countObjects)
 	displayCells := make([]*brain.DisplayCell, countObjects)
 
 	fmt.Printf("Create %d retina cells\n", len(retinaCells))
@@ -147,7 +147,8 @@ func main() {
 		"see": func(params []string) {
 			i, err := strconv.Atoi(params[0])
 			if err == nil {
-				fmt.Println("Show", "'"+files[i]+"'", "to network .. Answer?")
+				fmt.Println("Retina cells see ", "'"+files[i]+"'")
+				fmt.Println("Waiting for answer ...")
 
 				// TODO: Make func
 				for j, w := range objectCells[i].Weights() {
