@@ -7,7 +7,34 @@ import (
 	"time"
 )
 
-// TODO: see integer.Aggregate to work with a list of input channels
+// ----------------------------------------------------------------------------
+// Connect interface between cells
+// ----------------------------------------------------------------------------
+
+type InputConnector interface {
+	InputConnect(ch chan int, weight float64)
+}
+
+type OutputConnector interface {
+	OutputConnect(ch chan int)
+}
+
+type Namer interface {
+	Name() string
+}
+
+func ConnectBy(out OutputConnector, in InputConnector, weight float64) {
+
+	connection := make(chan int)
+	out.OutputConnect(connection)
+	in.InputConnect(connection, weight)
+
+	//fmt.Println(fmt.Sprintf("cell '%s' connected to '%s'", out.(Namer).Name(), in.(Namer).Name()))
+}
+
+// ----------------------------------------------------------------------------
+// Cell parts
+// ----------------------------------------------------------------------------
 
 func Synapse(weight float64, in <-chan int, out chan<- float64) func() {
 
@@ -22,12 +49,12 @@ func Synapse(weight float64, in <-chan int, out chan<- float64) func() {
 }
 
 var (
-	THRESHOLD = 10
+	THRESHOLD = 10.0
 )
 
-func Body(agg <-chan int, out chan<- int, threshold int) {
+func Body(agg <-chan float64, out chan<- int, threshold float64) {
 
-	sum := 0
+	sum := 0.0
 
 	for {
 		select {
