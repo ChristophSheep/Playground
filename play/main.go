@@ -116,7 +116,7 @@ func emitter(outs *[]chan int) {
 	}
 }
 
-func main() {
+func main_OLD() {
 
 	//         +---------+
 	//   A --->|    +--  |

@@ -17,7 +17,7 @@ func print(ys []int) {
 	fmt.Println()
 }
 
-func main() {
+func main_OLD() {
 
 	//
 	//  created with http://asciiflow.com/

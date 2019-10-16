@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"time"
 
 	"github.com/mysheep/cell"
 	"github.com/mysheep/cell/brain"
@@ -71,6 +72,10 @@ func getAllWeights(names []string) [][]float64 {
 	return wweights
 }
 
+func getNow() string {
+	return time.Now().Format("15:04:05.000")
+}
+
 func main() {
 
 	done := make(chan bool)
@@ -131,7 +136,6 @@ func main() {
 		}
 
 		for r, _ := range retinaCells {
-			// TODO: MassConnect without append
 			weight := wweights[o][r]
 			brain.ConnectBy(retinaCells[r], objectCells[o], weight)
 		}
@@ -147,8 +151,8 @@ func main() {
 		"see": func(params []string) {
 			i, err := strconv.Atoi(params[0])
 			if err == nil {
-				fmt.Println("Retina cells see ", "'"+files[i]+"'")
-				fmt.Println("Waiting for answer ...")
+				fmt.Println(getNow(), "-", "Retina cells see ", "'"+files[i]+"'")
+				fmt.Println(getNow(), "-", "Waiting for answer ...")
 
 				// TODO: Make func
 				for j, w := range objectCells[i].Weights() {

@@ -40,7 +40,7 @@ type MultiCell struct {
 	bodyOut chan int
 }
 
-func MakeMultiCell(name string, threshold int) *MultiCell {
+func MakeMultiCell(name string, threshold float64) *MultiCell {
 
 	c := MultiCell{
 		name: name,
@@ -59,14 +59,14 @@ func MakeMultiCell(name string, threshold int) *MultiCell {
 	return &c
 }
 
-func soma(c *MultiCell, threshold int) {
+func soma(c *MultiCell, threshold float64) {
 
 	sum := 0.0
 
 	var sendOut = func() {
 
 		var fireUntil = func() {
-			for ; sum >= float64(threshold); sum = sum - float64(threshold) {
+			for ; sum >= threshold; sum = sum - threshold {
 				c.bodyOut <- 1
 			}
 		}
@@ -75,7 +75,7 @@ func soma(c *MultiCell, threshold int) {
 			//c.bodyOut <- 0 // TODO: Rethink - fire a ZERO ??
 		}
 
-		if sum > float64(threshold) {
+		if sum > threshold {
 			fireUntil()
 		} else {
 			rest()
@@ -119,5 +119,7 @@ func (c *MultiCell) OutputConnect(ch chan int) {
 func (c *MultiCell) InputConnect(ch chan int, weight float64) {
 	c.inputs = append(c.inputs, ch)
 	c.weights = append(c.weights, weight)
-	go Synapse(weight, ch, c.bodyIn)
+	last := len(c.weights) - 1
+	// TODO: Wheight must be a pointer that it could change over time
+	go Synapse(&c.weights[last], ch, c.bodyIn)
 }

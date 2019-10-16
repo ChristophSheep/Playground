@@ -32,17 +32,21 @@ func ConnectBy(out OutputConnector, in InputConnector, weight float64) {
 	//fmt.Println(fmt.Sprintf("cell '%s' connected to '%s'", out.(Namer).Name(), in.(Namer).Name()))
 }
 
+func getNow() string {
+	return time.Now().Format("15:04:05.000")
+}
+
 // ----------------------------------------------------------------------------
 // Cell parts
 // ----------------------------------------------------------------------------
 
-func Synapse(weight float64, in <-chan int, out chan<- float64) func() {
+func Synapse(weight *float64, in <-chan int, out chan<- float64) func() {
 
 	for {
 		signal := <-in
 		val := float64(0.0)
 		if signal > 0 {
-			val = weight
+			val = *weight
 		}
 		out <- val
 	}
@@ -84,7 +88,7 @@ func Axon(in <-chan int, outs []chan int) {
 func Display(in <-chan int, text string) {
 	for {
 		val := <-in
-		fmt.Println(time.Now().Format("15:04:05.000"), "-", text, "val:", val)
+		fmt.Println(getNow(), "-", text, "val:", val)
 	}
 }
 
