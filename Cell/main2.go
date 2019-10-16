@@ -72,8 +72,64 @@ func getAllWeights(names []string) [][]float64 {
 	return wweights
 }
 
+<<<<<<< HEAD
 func getNow() string {
 	return time.Now().Format("15:04:05.000")
+=======
+/*
+	Create retina cells
+*/
+func createRetinaCells(retinaCells []*brain.EmitterCell) {
+	for i, _ := range retinaCells {
+		retinaCells[i] = brain.MakeEmitterCell(fmt.Sprintf("retina%2d", i))
+	}
+}
+
+/*
+	Create objects (recognition) cells
+*/
+func createObjectCells(objectCells []*brain.MultiCell, files []string, THRESHOLD int) {
+	for j, _ := range objectCells {
+		objectCells[j] = brain.MakeMultiCell(files[j], THRESHOLD)
+	}
+}
+
+/*
+	Create display cells
+*/
+func createDisplayCells(displayCells []*brain.DisplayCell, files []string) {
+	for j, _ := range displayCells {
+		displayCells[j] = brain.MakeDisplayCell(files[j])
+
+	}
+}
+
+/*
+	Connect object with display cells
+*/
+func connectObjectWithDisplayCells(objectCells []*brain.MultiCell, displayCells []*brain.DisplayCell) {
+	for j, _ := range objectCells {
+		brain.ConnectBy(objectCells[j], displayCells[j], float64(1.0))
+	}
+}
+
+/*
+	Connect retina with objects cells
+*/
+func connectRetinaWithObjectCells(retinaCells []*brain.EmitterCell, objectCells []*brain.MultiCell, wweights [][]float64) {
+	for o, _ := range objectCells {
+
+		if math.Mod(float64(o), float64(200)) == 0.0 {
+			fmt.Println(fmt.Sprintf("Connect %d of %d", o, len(objectCells)))
+		}
+
+		for r, _ := range retinaCells {
+			// TODO: MassConnect without append
+			weight := wweights[o][r]
+			brain.ConnectBy(retinaCells[r], objectCells[o], weight)
+		}
+	}
+>>>>>>> aee47e56bf42fbbd90a7cf515a5c1ee2ea6c094f
 }
 
 func main() {
@@ -103,43 +159,14 @@ func main() {
 	objectCells := make([]*brain.MultiCell, countObjects)
 	displayCells := make([]*brain.DisplayCell, countObjects)
 
-	fmt.Printf("Create %d retina cells\n", len(retinaCells))
+	allWeights := getAllWeights(files)
 
-	// Create retina cells
-	//
-	for i, _ := range retinaCells {
-		retinaCells[i] = brain.MakeEmitterCell(fmt.Sprintf("retina%2d", i))
-	}
+	createRetinaCells(retinaCells)
+	createObjectCells(objectCells, files, THRESHOLD)
+	createDisplayCells(displayCells, files)
 
-	fmt.Printf("Create %d object and display cells\n", len(objectCells))
-
-	// Create object and display cells
-	//
-	for j, _ := range objectCells {
-		objectCells[j] = brain.MakeMultiCell(files[j], THRESHOLD)
-		displayCells[j] = brain.MakeDisplayCell(files[j])
-		brain.ConnectBy(objectCells[j], displayCells[j], float64(1.0))
-	}
-
-	fmt.Println(len(displayCells), "display created")
-	fmt.Printf("Connect %d object cells with display cells\n", len(objectCells))
-	fmt.Printf("Connect retina cells with countObjects cells - %d connections\n", len(retinaCells)*len(objectCells))
-
-	wweights := getAllWeights(files)
-
-	// Connect retina cells with object cells
-	//
-	for o, _ := range objectCells {
-
-		if math.Mod(float64(o), float64(200)) == 0.0 {
-			fmt.Println(fmt.Sprintf("Connect %d of %d", o, len(objectCells)))
-		}
-
-		for r, _ := range retinaCells {
-			weight := wweights[o][r]
-			brain.ConnectBy(retinaCells[r], objectCells[o], weight)
-		}
-	}
+	connectObjectWithDisplayCells(objectCells, displayCells)
+	connectRetinaWithObjectCells(retinaCells, objectCells, allWeights)
 
 	//
 	// Console Commands
