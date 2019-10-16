@@ -72,10 +72,10 @@ func getAllWeights(names []string) [][]float64 {
 	return wweights
 }
 
-<<<<<<< HEAD
 func getNow() string {
 	return time.Now().Format("15:04:05.000")
-=======
+}
+
 /*
 	Create retina cells
 */
@@ -88,7 +88,7 @@ func createRetinaCells(retinaCells []*brain.EmitterCell) {
 /*
 	Create objects (recognition) cells
 */
-func createObjectCells(objectCells []*brain.MultiCell, files []string, THRESHOLD int) {
+func createObjectCells(objectCells []*brain.MultiCell, files []string, THRESHOLD float64) {
 	for j, _ := range objectCells {
 		objectCells[j] = brain.MakeMultiCell(files[j], THRESHOLD)
 	}
@@ -129,7 +129,6 @@ func connectRetinaWithObjectCells(retinaCells []*brain.EmitterCell, objectCells 
 			brain.ConnectBy(retinaCells[r], objectCells[o], weight)
 		}
 	}
->>>>>>> aee47e56bf42fbbd90a7cf515a5c1ee2ea6c094f
 }
 
 func main() {
