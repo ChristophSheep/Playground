@@ -8,11 +8,11 @@ import (
 	"os"
 )
 
-const size = 32
-const folder = "./Font-Awesome-SVG-PNG/black/png/%d/"
+const SIZE = 32
+const FOLDER = "./Font-Awesome-SVG-PNG/black/png/%d/"
 
 func getFolder() string {
-	dir := fmt.Sprintf(folder, size)
+	dir := fmt.Sprintf(FOLDER, SIZE)
 	return dir
 }
 
@@ -77,11 +77,11 @@ func printPixels(pixels []bool) {
 
 func getPixels(img image.Image) ([]bool, error) {
 
-	pixels := make([]bool, size*size)
+	pixels := make([]bool, SIZE*SIZE)
 
-	for y := 0; y < size; y++ {
-		for x := 0; x < size; x++ {
-			i := x + y*size
+	for y := 0; y < SIZE; y++ {
+		for x := 0; x < SIZE; x++ {
+			i := x + y*SIZE
 			pixels[i] = getBit(x, y, &img)
 		}
 	}

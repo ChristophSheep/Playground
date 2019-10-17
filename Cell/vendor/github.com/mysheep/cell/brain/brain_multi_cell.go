@@ -1,5 +1,7 @@
 package brain
 
+import "time"
+
 // ----------------------------------------------------------------------------
 // Multi weighted inputs and one output axon with multi connections cell
 //
@@ -28,6 +30,8 @@ package brain
 //                      weights
 //
 // ----------------------------------------------------------------------------
+
+const MAXAGE = 1 // max age in seconds of soma in multicell
 
 type MultiCell struct {
 	name string
@@ -61,35 +65,21 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 
 func soma(c *MultiCell, threshold float64) {
 
-	const MAXAGE = 1 // seconds
-	sums := MakeFloatSums(1)
+	// seconds
+	sums := MakeFloatSums(MAXAGE)
 
-	/*
-		var sendOut = func() {
-
-			var fireUntil = func() {
-				for ; sum >= threshold; sum = sum - threshold {
-					c.bodyOut <- IntTime{val: 1, time: time.Now()}
-				}
-			}
-
-			var rest = func() {
-				//c.bodyOut <- 0 // TODO: Rethink - fire a ZERO ??
-			}
-
-			if sum > threshold {
-				fireUntil()
-			} else {
-				rest()
-			}
-		}
-	*/
+	var fire = func() {
+		c.bodyOut <- IntTime{val: 1, time: time.Now()}
+	}
 
 	for {
 		select {
 		case val := <-c.bodyIn:
 			sums.AddVal(val)
-			// TODO: sendOut()
+			if sum, ok := sums.getSum(val.time); ok && sum >= threshold {
+				fire()
+				sums.resetSum(val.time)
+			}
 		}
 	}
 }
@@ -123,6 +113,5 @@ func (c *MultiCell) InputConnect(ch chan IntTime, weight float64) {
 	c.inputs = append(c.inputs, ch)
 	c.weights = append(c.weights, weight)
 	last := len(c.weights) - 1
-	// TODO: Wheight must be a pointer that it could change over time
 	go Synapse(&c.weights[last], ch, c.bodyIn)
 }

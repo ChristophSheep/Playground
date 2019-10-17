@@ -20,7 +20,7 @@ func getCount(bits *[]bool) int {
 	return count
 }
 
-func getWeights(name string) ([]float64, error) {
+func getPixelsByName(name string) ([]bool, error) {
 
 	fileName := getFilename(name)
 
@@ -33,6 +33,17 @@ func getWeights(name string) ([]float64, error) {
 	}
 
 	bits, err := getPixels(img)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bits, err
+}
+
+func getWeights(name string) ([]float64, error) {
+
+	bits, err := getPixelsByName(name)
 
 	if err != nil {
 		return nil, err
@@ -73,7 +84,7 @@ func getAllWeights(names []string) [][]float64 {
 }
 
 func getNow() string {
-	return time.Now().Format("15:04:05.000")
+	return time.Now().Format(brain.TIME_FORMAT)
 }
 
 /*
@@ -100,7 +111,6 @@ func createObjectCells(objectCells []*brain.MultiCell, files []string, THRESHOLD
 func createDisplayCells(displayCells []*brain.DisplayCell, files []string) {
 	for j, _ := range displayCells {
 		displayCells[j] = brain.MakeDisplayCell(files[j])
-
 	}
 }
 
@@ -130,6 +140,28 @@ func connectRetinaWithObjectCells(retinaCells []*brain.EmitterCell, objectCells 
 		}
 	}
 }
+func seePixel(name string, retinaCells []*brain.EmitterCell) {
+
+	pixels, err := getPixelsByName(name)
+
+	if err != nil {
+		return
+	}
+
+	start := time.Now()
+	for i := 0; i < len(pixels); i = i + SIZE {
+		rs := pixels[i : i+SIZE]
+		go func(rs []bool, row int) {
+			for j, bit := range rs {
+				if bit {
+					retinaCells[row+j].EmitOne(start)
+				}
+			}
+		}(rs, i)
+	}
+	end := time.Now().Sub(start)
+	fmt.Printf("Send duration was %v\n", end)
+}
 
 func main() {
 
@@ -140,7 +172,7 @@ func main() {
 	// Setup Network
 	//
 
-	fmt.Printf("size is set to %d\n", size)
+	fmt.Printf("SIZE is set to %d\n", SIZE)
 
 	files, err := getFiles(getFolder())
 
@@ -149,12 +181,12 @@ func main() {
 	}
 
 	var countObjects = len(files)
-	const THRESHOLD = size*size - 2 // TODO:???
+	const THRESHOLD = SIZE*SIZE - 2 // TODO:???
 
 	fmt.Printf("%d objects found\n", countObjects)
 	fmt.Printf("Cell threshold is set to %d\n", THRESHOLD)
 
-	retinaCells := make([]*brain.EmitterCell, size*size)
+	retinaCells := make([]*brain.EmitterCell, SIZE*SIZE)
 	objectCells := make([]*brain.MultiCell, countObjects)
 	displayCells := make([]*brain.DisplayCell, countObjects)
 
@@ -175,19 +207,12 @@ func main() {
 		"exit": func(params []string) { done <- true },
 		"q":    func(params []string) { done <- true },
 		"see": func(params []string) {
-			i, err := strconv.Atoi(params[0])
+			objIndex, err := strconv.Atoi(params[0])
+			name := files[objIndex]
 			if err == nil {
-				fmt.Println(getNow(), "-", "Retina cells see ", "'"+files[i]+"'")
+				fmt.Println(getNow(), "-", fmt.Sprintf("Retina cells see now '%s'", name))
 				fmt.Println(getNow(), "-", "Waiting for answer ...")
-				now := time.Now()
-				// TODO: Make func
-				for j, w := range objectCells[i].Weights() {
-					if w > 0 {
-						retinaCells[j].EmitOne(now)
-					}
-				}
-
-				// TODO: Reset
+				seePixel(name, retinaCells)
 			}
 		},
 		"ws": func(params []string) {

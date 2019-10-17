@@ -8,7 +8,13 @@ import (
 )
 
 // ----------------------------------------------------------------------------
-// Connect interface between cells
+// Constants
+// ----------------------------------------------------------------------------
+
+const TIME_FORMAT = "15:04:05.00000"
+
+// ----------------------------------------------------------------------------
+// Interfaces
 // ----------------------------------------------------------------------------
 
 type InputConnector interface {
@@ -23,17 +29,18 @@ type Namer interface {
 	Name() string
 }
 
+// ----------------------------------------------------------------------------
+// Public
+// ----------------------------------------------------------------------------
+
 func ConnectBy(out OutputConnector, in InputConnector, weight float64) {
-
-	connection := make(chan IntTime)
-	out.OutputConnect(connection)
-	in.InputConnect(connection, weight)
-
-	//fmt.Println(fmt.Sprintf("cell '%s' connected to '%s'", out.(Namer).Name(), in.(Namer).Name()))
+	ch := make(chan IntTime, 10)
+	out.OutputConnect(ch)
+	in.InputConnect(ch, weight)
 }
 
 func getNow() string {
-	return time.Now().Format("15:04:05.000")
+	return time.Now().Format(TIME_FORMAT)
 }
 
 // ----------------------------------------------------------------------------
@@ -76,7 +83,6 @@ func Body(agg <-chan float64, out chan<- int, threshold float64) {
 }
 
 func Axon(in <-chan int, outs []chan int) {
-	//fmt.Printf("Axon 2 %p \n", &outs)
 	for {
 		val := <-in
 		for _, out := range outs {
@@ -88,7 +94,7 @@ func Axon(in <-chan int, outs []chan int) {
 func Display(in <-chan IntTime, text string) {
 	for {
 		x := <-in
-		fmt.Println(getNow(), "-", text, "val:", x.val, "time:", x.time)
+		fmt.Println(getNow(), "-", text, x.String())
 	}
 }
 

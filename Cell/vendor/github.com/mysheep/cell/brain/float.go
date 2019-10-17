@@ -10,6 +10,10 @@ type FloatTime struct {
 	time time.Time
 }
 
+func (x *FloatTime) String() string {
+	return fmt.Sprintf("{val:%f, time:%s}", x.val, x.time.Format(TIME_FORMAT))
+}
+
 type FloatSums struct {
 	sums   map[time.Time]float64
 	maxAge int
@@ -39,6 +43,19 @@ func (c *FloatSums) AddVals(ts ...FloatTime) {
 func (c *FloatSums) isOld(t time.Time) bool {
 	delta := time.Duration(c.maxAge) * time.Second
 	return time.Now().Sub(t) > delta
+}
+
+func (c *FloatSums) getSum(t time.Time) (float64, bool) {
+	val, ok := c.sums[t]
+	return val, ok
+}
+
+func (c *FloatSums) resetSum(t time.Time) {
+	_, ok := c.sums[t]
+	if ok {
+		c.sums[t] = 0.0
+	}
+
 }
 
 func (c *FloatSums) removeOld() {

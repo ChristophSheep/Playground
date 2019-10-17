@@ -10,6 +10,10 @@ type IntTime struct {
 	time time.Time
 }
 
+func (c *IntTime) String() string {
+	return fmt.Sprintf("{val: %d, time: %s}", c.val, c.time.Format(TIME_FORMAT))
+}
+
 type IntSums struct {
 	sums   map[time.Time]int
 	maxAge int
@@ -34,6 +38,19 @@ func (c *IntSums) AddVals(ts ...IntTime) {
 	for _, t := range ts {
 		c.AddVal(t)
 	}
+}
+
+func (c *IntSums) getSum(t time.Time) (int, bool) {
+	val, ok := c.sums[t]
+	return val, ok
+}
+
+func (c *IntSums) resetSum(t time.Time) {
+	_, ok := c.sums[t]
+	if ok {
+		c.sums[t] = 0
+	}
+
 }
 
 func (c *IntSums) isOld(t time.Time) bool {
