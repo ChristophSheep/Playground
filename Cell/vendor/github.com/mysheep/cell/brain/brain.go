@@ -12,11 +12,11 @@ import (
 // ----------------------------------------------------------------------------
 
 type InputConnector interface {
-	InputConnect(ch chan int, weight float64)
+	InputConnect(ch chan IntTime, weight float64)
 }
 
 type OutputConnector interface {
-	OutputConnect(ch chan int)
+	OutputConnect(ch chan IntTime)
 }
 
 type Namer interface {
@@ -25,7 +25,7 @@ type Namer interface {
 
 func ConnectBy(out OutputConnector, in InputConnector, weight float64) {
 
-	connection := make(chan int)
+	connection := make(chan IntTime)
 	out.OutputConnect(connection)
 	in.InputConnect(connection, weight)
 
@@ -40,13 +40,13 @@ func getNow() string {
 // Cell parts
 // ----------------------------------------------------------------------------
 
-func Synapse(weight *float64, in <-chan int, out chan<- float64) func() {
+func Synapse(weight *float64, in <-chan IntTime, out chan<- FloatTime) func() {
 
 	for {
 		signal := <-in
-		val := float64(0.0)
-		if signal > 0 {
-			val = *weight
+		val := FloatTime{val: 0.0, time: signal.time}
+		if signal.val > 0 {
+			val = FloatTime{val: *weight, time: signal.time}
 		}
 		out <- val
 	}
@@ -85,10 +85,10 @@ func Axon(in <-chan int, outs []chan int) {
 	}
 }
 
-func Display(in <-chan int, text string) {
+func Display(in <-chan IntTime, text string) {
 	for {
-		val := <-in
-		fmt.Println(getNow(), "-", text, "val:", val)
+		x := <-in
+		fmt.Println(getNow(), "-", text, "val:", x.val, "time:", x.time)
 	}
 }
 

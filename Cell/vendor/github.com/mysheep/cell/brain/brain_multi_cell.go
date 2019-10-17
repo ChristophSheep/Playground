@@ -32,12 +32,12 @@ package brain
 type MultiCell struct {
 	name string
 
-	inputs  []chan int
+	inputs  []chan IntTime
 	weights []float64
-	outputs []chan int
+	outputs []chan IntTime
 
-	bodyIn  chan float64
-	bodyOut chan int
+	bodyIn  chan FloatTime
+	bodyOut chan IntTime
 }
 
 func MakeMultiCell(name string, threshold float64) *MultiCell {
@@ -45,12 +45,12 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 	c := MultiCell{
 		name: name,
 
-		inputs:  make([]chan int, 0),
+		inputs:  make([]chan IntTime, 0),
 		weights: make([]float64, 0),
-		outputs: make([]chan int, 0),
+		outputs: make([]chan IntTime, 0),
 
-		bodyIn:  make(chan float64, 100), // buffered, because many pipe in
-		bodyOut: make(chan int),
+		bodyIn:  make(chan FloatTime, 100), // buffered, because many pipe in
+		bodyOut: make(chan IntTime),
 	}
 
 	go soma(&c, threshold)
@@ -61,32 +61,35 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 
 func soma(c *MultiCell, threshold float64) {
 
-	sum := 0.0
+	const MAXAGE = 1 // seconds
+	sums := MakeFloatSums(1)
 
-	var sendOut = func() {
+	/*
+		var sendOut = func() {
 
-		var fireUntil = func() {
-			for ; sum >= threshold; sum = sum - threshold {
-				c.bodyOut <- 1
+			var fireUntil = func() {
+				for ; sum >= threshold; sum = sum - threshold {
+					c.bodyOut <- IntTime{val: 1, time: time.Now()}
+				}
+			}
+
+			var rest = func() {
+				//c.bodyOut <- 0 // TODO: Rethink - fire a ZERO ??
+			}
+
+			if sum > threshold {
+				fireUntil()
+			} else {
+				rest()
 			}
 		}
-
-		var rest = func() {
-			//c.bodyOut <- 0 // TODO: Rethink - fire a ZERO ??
-		}
-
-		if sum > threshold {
-			fireUntil()
-		} else {
-			rest()
-		}
-	}
+	*/
 
 	for {
 		select {
 		case val := <-c.bodyIn:
-			sum = sum + val
-			sendOut()
+			sums.AddVal(val)
+			// TODO: sendOut()
 		}
 	}
 }
@@ -112,11 +115,11 @@ func (c *MultiCell) Name() string {
 	return c.name
 }
 
-func (c *MultiCell) OutputConnect(ch chan int) {
+func (c *MultiCell) OutputConnect(ch chan IntTime) {
 	c.outputs = append(c.outputs, ch)
 }
 
-func (c *MultiCell) InputConnect(ch chan int, weight float64) {
+func (c *MultiCell) InputConnect(ch chan IntTime, weight float64) {
 	c.inputs = append(c.inputs, ch)
 	c.weights = append(c.weights, weight)
 	last := len(c.weights) - 1

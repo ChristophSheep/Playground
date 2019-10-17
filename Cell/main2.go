@@ -179,11 +179,11 @@ func main() {
 			if err == nil {
 				fmt.Println(getNow(), "-", "Retina cells see ", "'"+files[i]+"'")
 				fmt.Println(getNow(), "-", "Waiting for answer ...")
-
+				now := time.Now()
 				// TODO: Make func
 				for j, w := range objectCells[i].Weights() {
 					if w > 0 {
-						retinaCells[j].EmitOne()
+						retinaCells[j].EmitOne(now)
 					}
 				}
 
