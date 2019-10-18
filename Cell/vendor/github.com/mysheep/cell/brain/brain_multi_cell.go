@@ -53,7 +53,7 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 		weights: make([]float64, 0),
 		outputs: make([]chan IntTime, 0),
 
-		bodyIn:  make(chan FloatTime, 100), // buffered, because many pipe in
+		bodyIn:  make(chan FloatTime, 4096), // size of inputs, so that they not need to wait
 		bodyOut: make(chan IntTime),
 	}
 

@@ -24,8 +24,16 @@ func (c *EmitterCell) OutputConnect(ch chan IntTime /*not used*/) {
 }
 
 func (c *EmitterCell) EmitOne(t time.Time) {
-	for _, out := range c.outputs {
-		out <- IntTime{val: 1, time: t}
+	one := IntTime{val: 1, time: t}
+	for _, ch := range c.outputs {
+		ch <- one
+	}
+}
+
+func (c *EmitterCell) EmitZero(t time.Time) {
+	one := IntTime{val: 0, time: t}
+	for _, ch := range c.outputs {
+		ch <- one
 	}
 }
 

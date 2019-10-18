@@ -24,8 +24,6 @@ func getPixelsByName(name string) ([]bool, error) {
 
 	fileName := getFilename(name)
 
-	//	fmt.Println("name", name)
-
 	img, err := getImage(fileName)
 
 	if err != nil {
@@ -67,20 +65,28 @@ func getWeights(name string) ([]float64, error) {
 
 }
 
-func getAllWeights(names []string) [][]float64 {
+func getAllWeights(names []string) ([][]float64, error) {
 
 	wweights := make([][]float64, len(names))
 
+	i := 0
 	for j, name := range names {
-		fmt.Println(j, ":", name)
+		fmt.Printf("%d:%25s ", j, name)
+		if i == 4 {
+			fmt.Println()
+			i = 0
+		}
+
 		weights, err := getWeights(name)
 		if err != nil {
-			panic(fmt.Sprint("Count not get weights from file ", name))
+			return nil, err
 		}
 		wweights[j] = weights
+		i = i + 1
 	}
+	fmt.Println()
 
-	return wweights
+	return wweights, nil
 }
 
 func getNow() string {
@@ -140,6 +146,7 @@ func connectRetinaWithObjectCells(retinaCells []*brain.EmitterCell, objectCells 
 		}
 	}
 }
+
 func seePixel(name string, retinaCells []*brain.EmitterCell) {
 
 	pixels, err := getPixelsByName(name)
@@ -148,19 +155,27 @@ func seePixel(name string, retinaCells []*brain.EmitterCell) {
 		return
 	}
 
-	start := time.Now()
-	for i := 0; i < len(pixels); i = i + SIZE {
-		rs := pixels[i : i+SIZE]
-		go func(rs []bool, row int) {
-			for j, bit := range rs {
-				if bit {
-					retinaCells[row+j].EmitOne(start)
-				}
+	YSIZE := SIZE
+	XSIZE := SIZE
+
+	var sendPixelRow = func(row []bool, rowIndex int, time time.Time) {
+		for colIndex, bit := range row {
+			if bit {
+				retinaCells[rowIndex*YSIZE+colIndex].EmitOne(time)
+			} else {
+				retinaCells[rowIndex*YSIZE+colIndex].EmitZero(time)
 			}
-		}(rs, i)
+		}
 	}
-	end := time.Now().Sub(start)
-	fmt.Printf("Send duration was %v\n", end)
+
+	startTime := time.Now()
+	for rowIndex := 0; rowIndex < YSIZE; rowIndex = rowIndex + 1 {
+		i := rowIndex * XSIZE
+		row := pixels[i : i+XSIZE]
+		go sendPixelRow(row, rowIndex, startTime)
+	}
+	elapsed := time.Now().Sub(startTime)
+	fmt.Printf("Send duration was %v\n", elapsed)
 }
 
 func main() {
@@ -190,7 +205,12 @@ func main() {
 	objectCells := make([]*brain.MultiCell, countObjects)
 	displayCells := make([]*brain.DisplayCell, countObjects)
 
-	allWeights := getAllWeights(files)
+	allWeights, err := getAllWeights(files)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	createRetinaCells(retinaCells)
 	createObjectCells(objectCells, files, THRESHOLD)
