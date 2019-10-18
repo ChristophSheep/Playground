@@ -196,6 +196,12 @@ func main() {
 
 	//
 	// Setup Network
+	//           ObjectCell
+	// Retina    +-------+      DisplayCell
+	// [o]---w0->|       |
+	// [o]---w1->|   A   o----->[Display "A"]
+	// [o]---wn->|       |
+	//           +-------+
 	//
 
 	fmt.Printf("SIZE is set to %d\n", SIZE)
