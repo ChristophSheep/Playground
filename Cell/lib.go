@@ -9,7 +9,7 @@ import (
 )
 
 const SIZE = 32
-const FOLDER = "./Font-Awesome-SVG-PNG/black/png/%d/"
+const FOLDER = "./Some-Characters/%d/"
 
 func getFolder() string {
 	dir := fmt.Sprintf(FOLDER, SIZE)

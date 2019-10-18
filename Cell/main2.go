@@ -65,25 +65,36 @@ func getWeights(name string) ([]float64, error) {
 
 }
 
+func fillSpaces(n int) string {
+	s := ""
+	for i := 0; i < n; i++ {
+		s = s + " "
+	}
+	return s
+}
+
 func getAllWeights(names []string) ([][]float64, error) {
 
 	wweights := make([][]float64, len(names))
 
 	i := 0
+	fmt.Println()
 	for j, name := range names {
-		fmt.Printf("%d:%25s ", j, name)
-		if i == 4 {
-			fmt.Println()
-			i = 0
-		}
+		fmt.Printf("[%2d] %s%s", j, name, fillSpaces(20-len(name)))
 
 		weights, err := getWeights(name)
 		if err != nil {
 			return nil, err
 		}
 		wweights[j] = weights
+
 		i = i + 1
+		if i == 4 {
+			i = 0
+			fmt.Println()
+		}
 	}
+	fmt.Println()
 	fmt.Println()
 
 	return wweights, nil
@@ -228,6 +239,9 @@ func main() {
 		"q":    func(params []string) { done <- true },
 		"see": func(params []string) {
 			objIndex, err := strconv.Atoi(params[0])
+			if objIndex >= len(files) {
+				return
+			}
 			name := files[objIndex]
 			if err == nil {
 				fmt.Println(getNow(), "-", fmt.Sprintf("Retina cells see now '%s'", name))
