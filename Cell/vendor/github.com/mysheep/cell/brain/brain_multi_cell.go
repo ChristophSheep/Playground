@@ -36,12 +36,12 @@ const MAXAGE = 1 // max age in seconds of soma in multicell
 type MultiCell struct {
 	name string
 
-	inputs  []chan IntTime
+	inputs  []chan SignalTime
 	weights []float64
-	outputs []chan IntTime
+	outputs []chan SignalTime
 
 	bodyIn  chan FloatTime
-	bodyOut chan IntTime
+	bodyOut chan SignalTime
 }
 
 func MakeMultiCell(name string, threshold float64) *MultiCell {
@@ -49,12 +49,12 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 	c := MultiCell{
 		name: name,
 
-		inputs:  make([]chan IntTime, 0),
+		inputs:  make([]chan SignalTime, 0),
 		weights: make([]float64, 0),
-		outputs: make([]chan IntTime, 0),
+		outputs: make([]chan SignalTime, 0),
 
 		bodyIn:  make(chan FloatTime, 4096), // size of inputs, so that they not need to wait
-		bodyOut: make(chan IntTime),
+		bodyOut: make(chan SignalTime),
 	}
 
 	go soma(&c, threshold)
@@ -63,13 +63,25 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 	return &c
 }
 
+func synapse(weight *float64, in <-chan SignalTime, out chan<- FloatTime) func() {
+
+	for {
+		signal := <-in
+		val := FloatTime{val: 0.0, time: signal.time}
+		if signal.val {
+			val = FloatTime{val: *weight, time: signal.time}
+		}
+		out <- val
+	}
+}
+
 func soma(c *MultiCell, threshold float64) {
 
 	// seconds
 	sums := MakeFloatSums(MAXAGE)
 
 	var fire = func() {
-		c.bodyOut <- IntTime{val: 1, time: time.Now()}
+		c.bodyOut <- SignalTime{val: true, time: time.Now()}
 	}
 
 	for {
@@ -105,13 +117,13 @@ func (c *MultiCell) Name() string {
 	return c.name
 }
 
-func (c *MultiCell) OutputConnect(ch chan IntTime) {
+func (c *MultiCell) OutputConnect(ch chan SignalTime) {
 	c.outputs = append(c.outputs, ch)
 }
 
-func (c *MultiCell) InputConnect(ch chan IntTime, weight float64) {
+func (c *MultiCell) InputConnect(ch chan SignalTime, weight float64) {
 	c.inputs = append(c.inputs, ch)
 	c.weights = append(c.weights, weight)
-	last := len(c.weights) - 1
-	go Synapse(&c.weights[last], ch, c.bodyIn)
+	last := len(c.weights) - 1 // TODO: Refactor
+	go synapse(&c.weights[last], ch, c.bodyIn)
 }

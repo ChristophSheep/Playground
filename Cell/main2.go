@@ -173,9 +173,7 @@ func seePixel(name string, retinaCells []*brain.EmitterCell) {
 		for colIndex, bit := range row {
 			if bit {
 				retinaCells[rowIndex*YSIZE+colIndex].EmitOne(time)
-			} else {
-				retinaCells[rowIndex*YSIZE+colIndex].EmitZero(time)
-			}
+			} // Do not emit ZERO because cell is in rest and is not firing
 		}
 	}
 

@@ -18,11 +18,11 @@ const TIME_FORMAT = "15:04:05.00000"
 // ----------------------------------------------------------------------------
 
 type InputConnector interface {
-	InputConnect(ch chan IntTime, weight float64)
+	InputConnect(ch chan SignalTime, weight float64)
 }
 
 type OutputConnector interface {
-	OutputConnect(ch chan IntTime)
+	OutputConnect(ch chan SignalTime)
 }
 
 type Namer interface {
@@ -34,7 +34,7 @@ type Namer interface {
 // ----------------------------------------------------------------------------
 
 func ConnectBy(out OutputConnector, in InputConnector, weight float64) {
-	ch := make(chan IntTime, 10)
+	ch := make(chan SignalTime, 10)
 	out.OutputConnect(ch)
 	in.InputConnect(ch, weight)
 }
@@ -47,12 +47,12 @@ func getNow() string {
 // Cell parts
 // ----------------------------------------------------------------------------
 
-func Synapse(weight *float64, in <-chan IntTime, out chan<- FloatTime) func() {
+func Synapse(weight *float64, in <-chan SignalTime, out chan<- FloatTime) func() {
 
 	for {
 		signal := <-in
 		val := FloatTime{val: 0.0, time: signal.time}
-		if signal.val > 0 {
+		if signal.val {
 			val = FloatTime{val: *weight, time: signal.time}
 		}
 		out <- val
@@ -91,7 +91,7 @@ func Axon(in <-chan int, outs []chan int) {
 	}
 }
 
-func Display(in <-chan IntTime, text string) {
+func Display(in <-chan SignalTime, text string) {
 	for {
 		x := <-in
 		fmt.Println(getNow(), "-", text, x.String())
