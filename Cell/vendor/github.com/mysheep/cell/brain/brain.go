@@ -36,6 +36,10 @@ func ConnectBy(out OutputConnector, in InputConnector, weight float64) {
 	in.InputConnect(ch, weight)
 }
 
+// ----------------------------------------------------------------------------
+// Private
+// ----------------------------------------------------------------------------
+
 func getNow() string {
 	return time.Now().Format(TIME_FORMAT)
 }

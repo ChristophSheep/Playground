@@ -5,24 +5,9 @@ import (
 	"time"
 )
 
-type FloatTime struct {
-	val  float64
-	time time.Time
-}
-
-func (x *FloatTime) String() string {
-	return fmt.Sprintf("{val:%f, time:%s}", x.val, x.time.Format(TIME_FORMAT))
-}
-
 type FloatSums struct {
 	sums   map[time.Time]float64
 	maxAge int
-}
-
-func MakeFloatTime(val float64, time time.Time) FloatTime {
-	return FloatTime{
-		val:  val,
-		time: time}
 }
 
 func (c *FloatSums) AddVal(t FloatTime) {

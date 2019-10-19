@@ -34,7 +34,15 @@ import (
 //
 // ----------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------
+// Constants
+// ----------------------------------------------------------------------------
+
 const MAXAGE = 1 // max age in seconds of soma in multicell
+
+// ----------------------------------------------------------------------------
+// Public
+// ----------------------------------------------------------------------------
 
 type MultiCell struct {
 	name string
@@ -47,6 +55,32 @@ type MultiCell struct {
 	bodyOut chan SignalTime
 }
 
+func (c *MultiCell) SetWeight(i int, weight float64) {
+	c.weights[i] = weight
+}
+
+func (c *MultiCell) Weights() []float64 {
+	return c.weights
+}
+
+func (c *MultiCell) Name() string {
+	return c.name
+}
+
+func (c *MultiCell) OutputConnect(ch chan SignalTime) {
+	c.outputs = append(c.outputs, ch)
+}
+
+func (c *MultiCell) InputConnect(ch chan SignalTime, weight float64) {
+	c.inputs = append(c.inputs, ch)
+	c.weights = append(c.weights, weight)
+	last := len(c.weights) - 1 // TODO: Refactor
+	go synapse(&c.weights[last], ch, c.bodyIn)
+}
+
+/*
+	Make a multi input multi output cell
+*/
 func MakeMultiCell(name string, threshold float64) *MultiCell {
 
 	c := MultiCell{
@@ -66,6 +100,13 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 	return &c
 }
 
+// ----------------------------------------------------------------------------
+// Private
+// ----------------------------------------------------------------------------
+
+/*
+	Weighted synapae
+*/
 func synapse(weight *float64, in <-chan SignalTime, out chan<- FloatTime) func() {
 
 	for {
@@ -78,6 +119,9 @@ func synapse(weight *float64, in <-chan SignalTime, out chan<- FloatTime) func()
 	}
 }
 
+/*
+	Soma or also called cell body with threshold to fire
+*/
 func soma(c *MultiCell, threshold float64) {
 
 	// seconds
@@ -106,6 +150,9 @@ func soma(c *MultiCell, threshold float64) {
 	}
 }
 
+/*
+	Axon of a multi cell
+*/
 func axon(c *MultiCell) {
 	for {
 		val := <-c.bodyOut
@@ -113,27 +160,4 @@ func axon(c *MultiCell) {
 			out <- val
 		}
 	}
-}
-
-func (c *MultiCell) SetWeight(i int, weight float64) {
-	c.weights[i] = weight
-}
-
-func (c *MultiCell) Weights() []float64 {
-	return c.weights
-}
-
-func (c *MultiCell) Name() string {
-	return c.name
-}
-
-func (c *MultiCell) OutputConnect(ch chan SignalTime) {
-	c.outputs = append(c.outputs, ch)
-}
-
-func (c *MultiCell) InputConnect(ch chan SignalTime, weight float64) {
-	c.inputs = append(c.inputs, ch)
-	c.weights = append(c.weights, weight)
-	last := len(c.weights) - 1 // TODO: Refactor
-	go synapse(&c.weights[last], ch, c.bodyIn)
 }
