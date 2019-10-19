@@ -55,7 +55,6 @@ func (c *FloatSums) resetSum(t time.Time) {
 	if ok {
 		c.sums[t] = 0.0
 	}
-
 }
 
 func (c *FloatSums) removeOld() {

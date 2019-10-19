@@ -10,7 +10,7 @@ import (
 	"github.com/mysheep/cell/brain"
 )
 
-func getCount(bits *[]bool) int {
+func getCountBlack(bits *[]bool) int {
 	count := 0
 	for _, bit := range *bits {
 		if bit {
@@ -39,7 +39,7 @@ func getPixelsByName(name string) ([]bool, error) {
 	return bits, err
 }
 
-func getWeights(name string) ([]float64, error) {
+func getWeights(name string, threshold float64) ([]float64, error) {
 
 	bits, err := getPixelsByName(name)
 
@@ -47,17 +47,18 @@ func getWeights(name string) ([]float64, error) {
 		return nil, err
 	}
 
-	count := getCount(&bits)
-	weights := make([]float64, len(bits))
-	weight := float64(len(bits)) / float64(count)
+	countAll := len(bits)
+	countBlack := getCountBlack(&bits)
+	weights := make([]float64, countAll)
 
-	//
-	// TODO : negative Weight values to REPRESENT NOT
-	//
+	weightBlack := threshold / float64(countBlack)
+	weightWhite := -1.0 * threshold / float64(countAll)
 
 	for i, bit := range bits {
 		if bit {
-			weights[i] = weight
+			weights[i] = weightBlack
+		} else {
+			weights[i] = weightWhite
 		}
 	}
 
@@ -73,7 +74,7 @@ func fillSpaces(n int) string {
 	return s
 }
 
-func getAllWeights(names []string) ([][]float64, error) {
+func getAllWeights(names []string, threshold float64) ([][]float64, error) {
 
 	wweights := make([][]float64, len(names))
 
@@ -82,7 +83,7 @@ func getAllWeights(names []string) ([][]float64, error) {
 	for j, name := range names {
 		fmt.Printf("[%2d] %s%s", j, name, fillSpaces(20-len(name)))
 
-		weights, err := getWeights(name)
+		weights, err := getWeights(name, threshold)
 		if err != nil {
 			return nil, err
 		}
@@ -220,7 +221,7 @@ func main() {
 	objectCells := make([]*brain.MultiCell, countObjects)
 	displayCells := make([]*brain.DisplayCell, countObjects)
 
-	allWeights, err := getAllWeights(files)
+	allWeights, err := getAllWeights(files, THRESHOLD)
 
 	if err != nil {
 		fmt.Println(err)

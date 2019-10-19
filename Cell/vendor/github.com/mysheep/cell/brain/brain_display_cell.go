@@ -19,9 +19,16 @@ func (c *DisplayCell) Name() string {
 	return c.name
 }
 
+func display(in <-chan SignalTime, text string) {
+	for {
+		x := <-in
+		fmt.Println(getNow(), "-", text, x.String())
+	}
+}
+
 func (c *DisplayCell) InputConnect(ch chan SignalTime, weight float64 /*not used*/) {
 	c.inputs = append(c.inputs, ch)
-	go Display(ch, fmt.Sprintf("Cell '%s' has fired", c.Name()))
+	go display(ch, fmt.Sprintf("Cell '%s' has fired", c.Name()))
 }
 
 func MakeDisplayCell(name string) *DisplayCell {

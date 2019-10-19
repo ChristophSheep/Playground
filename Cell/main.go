@@ -7,7 +7,7 @@ import (
 
 	"github.com/mysheep/cell"
 	"github.com/mysheep/cell/brain"
-	"github.com/mysheep/cell/integer"
+	"github.com/mysheep/cell/brain/integer"
 )
 
 func print(ys []int) {
