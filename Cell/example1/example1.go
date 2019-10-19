@@ -1,4 +1,4 @@
-package main
+package example1
 
 import (
 	"fmt"
@@ -62,7 +62,6 @@ func Run() {
 	N := 5
 	ins := make([]chan int, N)
 	fin := make(chan int, 10)
-	//agg := make(chan int, 10)
 	for i := 0; i < N; i++ {
 		ins[i] = make(chan int)
 	}
@@ -95,22 +94,22 @@ func Run() {
 
 	S := 5
 
-	bIn := make(chan float64, 100) // buffered body input for aggretion of all synapses
-	sIns := make([]chan int, S)
+	bIn := make(chan brain.FloatTime, 100) // buffered body input for aggretion of all synapses
+	sIns := make([]chan brain.SignalTime, S)
 	weights := make([]float64, S)
 
 	for j := 0; j < S; j++ {
-		sIns[j] = make(chan int)
+		sIns[j] = make(chan brain.SignalTime)
 		weights[j] = float64(rand.Intn(7))
-		go brain.Synapse(weights[j], sIns[j], bIn)
+		go brain.Synapse(&weights[j], sIns[j], bIn)
 	}
 
 	A := 1
-	axIn := make(chan int)
-	axOuts := make([]chan int, A)
+	axIn := make(chan brain.SignalTime)
+	axOuts := make([]chan brain.SignalTime, A)
 
 	for j := 0; j < A; j++ {
-		axOuts[j] = make(chan int)
+		axOuts[j] = make(chan brain.SignalTime)
 		go brain.Writer(axOuts[j], fmt.Sprintf("out%d", j))
 	}
 	go brain.Body(bIn, axIn, brain.THRESHOLD)
@@ -214,22 +213,25 @@ func Run() {
 			}
 		},
 		"cell": func(params []string) {
+			one := brain.MakeSignalTime(true, time.Now())
 			for ii := 0; ii < 100; ii++ {
 				i := rand.Intn(S)
-				sIns[i] <- i
+				sIns[i] <- one
 				time.Sleep(50 * time.Millisecond)
 			}
 		},
 		"con": func(params []string) {
+			now := time.Now()
 			for k := 0; k < 10; k++ {
-				emitter1.EmitOne()
+				emitter1.EmitOne(now)
 				time.Sleep(50 * time.Millisecond)
 			}
 		},
 		"ex1": func(params []string) {
-			emitterA.EmitOne()
-			emitterB.EmitOne()
-			emitterC.EmitOne()
+			now := time.Now()
+			emitterA.EmitOne(now)
+			emitterB.EmitOne(now)
+			emitterC.EmitOne(now)
 		},
 	}
 

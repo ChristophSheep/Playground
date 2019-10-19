@@ -1,6 +1,9 @@
 package brain
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // ----------------------------------------------------------------------------
 // Multi weighted inputs and one output axon with multi connections cell
@@ -88,6 +91,13 @@ func soma(c *MultiCell, threshold float64) {
 		select {
 		case val := <-c.bodyIn:
 			sums.AddVal(val)
+
+			if c.name == "amazon.png" {
+				if sum, ok := sums.getSum(val.time); ok && sum > 0 {
+					fmt.Printf("sum: %f", sum)
+				}
+			}
+
 			if sum, ok := sums.getSum(val.time); ok && sum >= threshold {
 				fire()
 				sums.resetSum(val.time)

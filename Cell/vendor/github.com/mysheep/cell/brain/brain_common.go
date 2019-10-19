@@ -1,9 +1,16 @@
 package brain
 
+import (
+	"fmt"
+	"os"
+	"strings"
+	"time"
+)
+
 // ----------------------------------------------------------------------------
 // Cell parts
 // ----------------------------------------------------------------------------
-/*
+
 func Synapse(weight *float64, in <-chan SignalTime, out chan<- FloatTime) func() {
 
 	for {
@@ -20,26 +27,29 @@ var (
 	THRESHOLD = 10.0
 )
 
-func Body(agg <-chan float64, out chan<- int, threshold float64) {
+func Body(agg <-chan FloatTime, out chan<- SignalTime, threshold float64) {
 
 	sum := 0.0
+
+	one := SignalTime{val: true, time: time.Now()}
+	zero := SignalTime{val: false, time: time.Now()}
 
 	for {
 		select {
 		case val := <-agg:
-			sum = sum + val
+			sum = sum + val.val
 			if sum > threshold {
 				for ; sum > threshold; sum = sum - threshold {
-					out <- 1
+					out <- one
 				}
 			} else {
-				out <- 0
+				out <- zero // TODO: ??
 			}
 		}
 	}
 }
 
-func Axon(in <-chan int, outs []chan int) {
+func Axon(in <-chan SignalTime, outs []chan SignalTime) {
 	for {
 		val := <-in
 		for _, out := range outs {
@@ -59,7 +69,7 @@ var (
 	filenameTemplate = "cell_data_%s.txt"
 )
 
-func Writer(in <-chan int, name string) {
+func Writer(in <-chan SignalTime, name string) {
 
 	file, err := os.Create(fmt.Sprintf(filenameTemplate, name))
 	if err != nil {
@@ -87,4 +97,3 @@ func Writer(in <-chan int, name string) {
 		file.WriteString(s)
 	}
 }
-*/

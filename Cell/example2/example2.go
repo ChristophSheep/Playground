@@ -146,6 +146,9 @@ func connectRetinaWithObjectCells(retinaCells []*brain.EmitterCell, objectCells 
 	}
 }
 
+/*
+  Let retina see an image with given name
+*/
 func seePixel(spec Spec, name string, retinaCells []*brain.EmitterCell) {
 
 	pixels, err := imgx.GetPixelsByName(spec.FolderTemplate, spec.Size, name)
@@ -199,8 +202,9 @@ func Run(spec Spec) {
 		return
 	}
 
+	const EPSILON = 3.0 // TODO: ??
 	var countObjects = len(imgFiles)
-	var THRESHOLD = float64(spec.Size * spec.Size)
+	var THRESHOLD = float64(spec.Size*spec.Size) - EPSILON
 
 	fmt.Printf("%d objects found\n", countObjects)
 	fmt.Printf("Cell threshold is set to %f\n", THRESHOLD)
@@ -243,6 +247,9 @@ func Run(spec Spec) {
 			}
 		},
 		"ws": func(params []string) {
+			if len(params) == 0 {
+				return
+			}
 			i, err := strconv.Atoi(params[0])
 			if err == nil {
 				fmt.Printf("%v\n", objectCells[i].Weights())
