@@ -1,26 +1,41 @@
-package main
+package imgx
 
 import (
 	"fmt"
 	"image"
 	"image/png"
-	"log"
 	"os"
 )
 
-const SIZE = 32
-const FOLDER = "./Some-Characters/%d/"
+func GetPixelsByName(folderTemplate string, size int, name string) ([]bool, error) {
 
-func getFolder() string {
-	dir := fmt.Sprintf(FOLDER, SIZE)
+	fileName := getFilename(folderTemplate, size, name)
+
+	img, err := getImage(fileName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	bits, err := getPixels(img)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bits, err
+}
+
+func GetImgFolder(folderTemplate string, size int) string {
+	dir := fmt.Sprintf(folderTemplate, size)
 	return dir
 }
 
-func getFilename(name string) string {
-	return getFolder() + name
+func getFilename(folderTemplate string, size int, name string) string {
+	return GetImgFolder(folderTemplate, size) + name
 }
 
-func getFiles(folder string) ([]string, error) {
+func GetImgFiles(folder string) ([]string, error) {
 
 	file, err := os.Open(folder)
 	if err != nil {
@@ -33,7 +48,9 @@ func getFiles(folder string) ([]string, error) {
 	}
 	filenames := make([]string, 0)
 	for _, f := range fileinfos {
-		filenames = append(filenames, f.Name())
+		if f.IsDir() == false {
+			filenames = append(filenames, f.Name())
+		}
 	}
 
 	return filenames, nil
@@ -77,42 +94,17 @@ func printPixels(pixels []bool) {
 
 func getPixels(img image.Image) ([]bool, error) {
 
-	pixels := make([]bool, SIZE*SIZE)
+	xSize := img.Bounds().Size().X
+	ySize := img.Bounds().Size().Y
 
-	for y := 0; y < SIZE; y++ {
-		for x := 0; x < SIZE; x++ {
-			i := x + y*SIZE
+	pixels := make([]bool, xSize*ySize)
+
+	for y := 0; y < ySize; y++ {
+		for x := 0; x < xSize; x++ {
+			i := x + y*xSize
 			pixels[i] = getBit(x, y, &img)
 		}
 	}
 
 	return pixels, nil
-}
-
-func test() {
-
-	files, err := getFiles(getFolder())
-	if err != nil {
-		return
-	}
-
-	for i, file := range files {
-		fmt.Println(i, "-", file)
-	}
-
-	img, err := getImage(getFilename(files[0]))
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	pixels, err := getPixels(img)
-	if err == nil {
-		printPixels(pixels)
-	}
-
-	fmt.Println()
-	fmt.Println(len(pixels))
-
 }

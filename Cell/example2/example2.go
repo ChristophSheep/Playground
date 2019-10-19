@@ -1,4 +1,4 @@
-package main
+package example2
 
 import (
 	"fmt"
@@ -8,7 +8,13 @@ import (
 
 	"github.com/mysheep/cell"
 	"github.com/mysheep/cell/brain"
+	"github.com/mysheep/imgx"
 )
+
+type Spec struct {
+	Size           int
+	FolderTemplate string
+}
 
 func getCountBlack(bits *[]bool) int {
 	count := 0
@@ -20,28 +26,9 @@ func getCountBlack(bits *[]bool) int {
 	return count
 }
 
-func getPixelsByName(name string) ([]bool, error) {
+func getWeights(folderTemplate string, size int, name string, threshold float64) ([]float64, error) {
 
-	fileName := getFilename(name)
-
-	img, err := getImage(fileName)
-
-	if err != nil {
-		return nil, err
-	}
-
-	bits, err := getPixels(img)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return bits, err
-}
-
-func getWeights(name string, threshold float64) ([]float64, error) {
-
-	bits, err := getPixelsByName(name)
+	bits, err := imgx.GetPixelsByName(folderTemplate, size, name)
 
 	if err != nil {
 		return nil, err
@@ -74,7 +61,7 @@ func fillSpaces(n int) string {
 	return s
 }
 
-func getAllWeights(names []string, threshold float64) ([][]float64, error) {
+func getAllWeights(folderTemplate string, size int, names []string, threshold float64) ([][]float64, error) {
 
 	wweights := make([][]float64, len(names))
 
@@ -83,7 +70,7 @@ func getAllWeights(names []string, threshold float64) ([][]float64, error) {
 	for j, name := range names {
 		fmt.Printf("[%2d] %s%s", j, name, fillSpaces(20-len(name)))
 
-		weights, err := getWeights(name, threshold)
+		weights, err := getWeights(folderTemplate, size, name, threshold)
 		if err != nil {
 			return nil, err
 		}
@@ -159,16 +146,16 @@ func connectRetinaWithObjectCells(retinaCells []*brain.EmitterCell, objectCells 
 	}
 }
 
-func seePixel(name string, retinaCells []*brain.EmitterCell) {
+func seePixel(spec Spec, name string, retinaCells []*brain.EmitterCell) {
 
-	pixels, err := getPixelsByName(name)
+	pixels, err := imgx.GetPixelsByName(spec.FolderTemplate, spec.Size, name)
 
 	if err != nil {
 		return
 	}
 
-	YSIZE := SIZE
-	XSIZE := SIZE
+	YSIZE := spec.Size
+	XSIZE := spec.Size
 
 	var sendPixelRow = func(row []bool, rowIndex int, time time.Time) {
 		for colIndex, bit := range row {
@@ -188,7 +175,7 @@ func seePixel(name string, retinaCells []*brain.EmitterCell) {
 	fmt.Printf("Send duration was %v\n", elapsed)
 }
 
-func main() {
+func Run(spec Spec) {
 
 	done := make(chan bool)
 	waitUntilDone := func() { <-done }
@@ -203,25 +190,26 @@ func main() {
 	//           +-------+
 	//
 
-	fmt.Printf("SIZE is set to %d\n", SIZE)
+	fmt.Printf("SIZE is set to %d\n", spec.Size)
 
-	files, err := getFiles(getFolder())
+	imgFiles, err := imgx.GetImgFiles(imgx.GetImgFolder(spec.FolderTemplate, spec.Size))
 
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	var countObjects = len(files)
-	const THRESHOLD = SIZE*SIZE - 2 // TODO:???
+	var countObjects = len(imgFiles)
+	var THRESHOLD = float64(spec.Size * spec.Size)
 
 	fmt.Printf("%d objects found\n", countObjects)
-	fmt.Printf("Cell threshold is set to %d\n", THRESHOLD)
+	fmt.Printf("Cell threshold is set to %f\n", THRESHOLD)
 
-	retinaCells := make([]*brain.EmitterCell, SIZE*SIZE)
+	retinaCells := make([]*brain.EmitterCell, spec.Size*spec.Size)
 	objectCells := make([]*brain.MultiCell, countObjects)
 	displayCells := make([]*brain.DisplayCell, countObjects)
 
-	allWeights, err := getAllWeights(files, THRESHOLD)
+	allWeights, err := getAllWeights(spec.FolderTemplate, spec.Size, imgFiles, THRESHOLD)
 
 	if err != nil {
 		fmt.Println(err)
@@ -229,8 +217,8 @@ func main() {
 	}
 
 	createRetinaCells(retinaCells)
-	createObjectCells(objectCells, files, THRESHOLD)
-	createDisplayCells(displayCells, files)
+	createObjectCells(objectCells, imgFiles, THRESHOLD)
+	createDisplayCells(displayCells, imgFiles)
 
 	connectObjectWithDisplayCells(objectCells, displayCells)
 	connectRetinaWithObjectCells(retinaCells, objectCells, allWeights)
@@ -244,14 +232,14 @@ func main() {
 		"q":    func(params []string) { done <- true },
 		"see": func(params []string) {
 			objIndex, err := strconv.Atoi(params[0])
-			if objIndex >= len(files) {
+			if objIndex >= len(imgFiles) {
 				return
 			}
-			name := files[objIndex]
+			name := imgFiles[objIndex]
 			if err == nil {
 				fmt.Println(getNow(), "-", fmt.Sprintf("Retina cells see now '%s'", name))
 				fmt.Println(getNow(), "-", "Waiting for answer ...")
-				seePixel(name, retinaCells)
+				seePixel(spec, name, retinaCells)
 			}
 		},
 		"ws": func(params []string) {
