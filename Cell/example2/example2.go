@@ -204,7 +204,7 @@ func Run(spec Spec) {
 
 	const EPSILON = 3.0 // TODO: ??
 	var countObjects = len(imgFiles)
-	var THRESHOLD = float64(spec.Size*spec.Size) - EPSILON
+	var THRESHOLD = float64(spec.Size * spec.Size)
 
 	fmt.Printf("%d objects found\n", countObjects)
 	fmt.Printf("Cell threshold is set to %f\n", THRESHOLD)

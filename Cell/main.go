@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/mysheep/cell"
@@ -20,10 +21,12 @@ func main() {
 		"q": func(params []string) { done <- true },
 		"ex": func(params []string) {
 			if len(params) == 0 {
+				fmt.Println("Number missing: eg.: > ex 2")
 				return
 			}
 			nr, err := strconv.Atoi(params[0])
 			if err != nil {
+				fmt.Println("Parameter was not a number")
 				return
 			}
 			if nr == 1 {

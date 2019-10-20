@@ -136,13 +136,10 @@ func soma(c *MultiCell, threshold float64) {
 		case val := <-c.bodyIn:
 			sums.AddVal(val)
 
-			if c.name == "amazon.png" {
-				if sum, ok := sums.getSum(val.time); ok && sum > 0 {
-					fmt.Printf("sum: %f", sum)
-				}
-			}
+			const EPSILON = 0.5 // TODO Float64 has problems
 
-			if sum, ok := sums.getSum(val.time); ok && sum >= threshold {
+			if sum, ok := sums.getSum(val.time); ok && sum >= (threshold-EPSILON) {
+				fmt.Printf("%s -> sum: %f, threshold: %f", c.name, sum, threshold)
 				fire()
 				sums.resetSum(val.time)
 			}
