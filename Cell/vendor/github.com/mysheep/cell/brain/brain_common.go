@@ -92,7 +92,7 @@ func Writer(in <-chan SignalTime, name string) {
 
 	for val := range in {
 		setFirst(&flag, &first)
-		s := fmt.Sprintf("%0.3f\t%d\n", getDelta(first), val)
+		s := fmt.Sprintf("%0.3f\t%t\n", getDelta(first), val.val) // TODO
 		s = strings.Replace(s, ".", ",", -1)
 		file.WriteString(s)
 	}
