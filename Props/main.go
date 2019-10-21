@@ -62,6 +62,9 @@ func (n *NameProp) Name() string {
 	return n.name
 }
 func (n *NameProp) Value() interface{} {
+	if n.IsMandatary() && !n.HasValue() {
+		return n.defaultValue
+	}
 	return n.value
 }
 
@@ -104,6 +107,9 @@ func (n *NumberProp) Name() string {
 	return n.name
 }
 func (n *NumberProp) Value() interface{} {
+	if n.IsMandatary() && !n.HasValue() {
+		return n.defaultValue
+	}
 	return n.value
 }
 
