@@ -29,7 +29,6 @@ func printCmd() {
 	fmt.Print("command > ")
 }
 
-// TODO: MOVE TO LIBRARY
 func Console(done chan<- bool, cmds map[string]func()) {
 
 	printAvailableCmds := func() {
