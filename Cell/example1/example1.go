@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/mysheep/cell/brain"
-	"github.com/mysheep/cell/console"
 	"github.com/mysheep/cell/integer"
+	"github.com/mysheep/console"
 )
 
 func print(ys []int) {

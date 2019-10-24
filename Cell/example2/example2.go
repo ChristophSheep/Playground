@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/mysheep/cell/brain"
-	"github.com/mysheep/cell/console"
+	"github.com/mysheep/console"
 	"github.com/mysheep/imgx"
 )
 

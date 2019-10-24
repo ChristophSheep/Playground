@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/mysheep/cell/console"
+	"github.com/mysheep/console"
 	"github.com/mysheep/playground/Cell/example1"
 	"github.com/mysheep/playground/Cell/example2"
 )
