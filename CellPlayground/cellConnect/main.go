@@ -5,21 +5,22 @@ import (
 	"time"
 )
 
-func producer(ch chan<- int, done chan int) {
-	for i := 0; i < 7; i++ {
+func producer(n int, ch chan<- int) {
+	for i := 0; i < n; i++ {
 		ch <- i
 		time.Sleep(200.0 * time.Millisecond)
 	}
-	done <- 0
+
 }
 
-func consumer(ch <-chan int) {
+func consumer(n int, ch <-chan int, done chan int) {
 	time.Sleep(2 * time.Second)
-	for {
+	for i := 0; i < n; i++ {
 		i := <-ch // block until data come
-		fmt.Printf("val: %d len: %d \n", i, len(ch))
+		fmt.Printf("consumer receive val: %4d channel len: %d \n", i, len(ch))
 		time.Sleep(50 * time.Millisecond)
 	}
+	done <- 0
 }
 
 type cell struct {
@@ -32,57 +33,48 @@ type cell struct {
 }
 
 func add1(x int) int {
-	return x + 1
+	return x * x
 }
 
-func setIn(c *cell, in chan int) {
+func (c *cell) setIn(in chan int) {
 	c.in = in
 	c.inConnected <- true
 	fmt.Printf("setIn  %p %v\n", c, c)
 }
-func setOut(c *cell, out chan int) {
+
+func (c *cell) setOut(out chan int) {
 	c.out = out
 	c.outConnected <- true
 	fmt.Printf("setOut %p %v\n", c, c)
 }
 
-func connect(src *cell, dest *cell) {
+func (src *cell) connectTo(dest *cell) {
 	ch := make(chan int, 10)
-	setOut(src, ch)
-	setIn(dest, ch)
+	src.setOut(ch)
+	dest.setIn(ch)
 }
 
-func cellRun(c *cell) {
+func (c *cell) cellRun() {
 	<-c.inConnected  // wait until input connected
 	<-c.outConnected // wait until output connected
 	for {
 		val := c.fn(<-c.in)
 		c.out <- val
 	}
+	// TODO: Disconnect stop running??
 }
 
 func makeCell(name string, fn func(int) int) *cell {
-	ci := make(chan bool, 1)
-	co := make(chan bool, 1)
-	c := cell{name: name, inConnected: ci, outConnected: co, fn: fn}
-	go cellRun(&c)
+	inConnectedSignal := make(chan bool, 1)
+	outConnectedSignal := make(chan bool, 1)
+	c := cell{name: name, inConnected: inConnectedSignal, outConnected: outConnectedSignal, fn: fn}
+	go c.cellRun()
 	return &c
-}
-
-//
-// Create a cell and when it fully connected let it run
-//
-
-func cellDisplay(out <-chan int) {
-	for {
-		res := <-out
-		fmt.Printf("res: %d\n", res)
-	}
 }
 
 func main() {
 
-	//done := make(chan bool)
+	const N = 7
 
 	in := make(chan int, 10)
 	out := make(chan int, 10)
@@ -97,25 +89,26 @@ func main() {
 	fmt.Printf("address cell1 %p\n", c1)
 	fmt.Printf("address cell2 %p\n", c2)
 
-	go cellDisplay(out)
-
-	setOut(c2, out)
-	setIn(c1, in)
+	c2.setOut(out)
+	c1.setIn(in)
 
 	// in                  out
 	// -->[ c1 ]     [ c2 ]-->
 	//
 
-	connect(c1, c2)
+	c1.connectTo(c2)
 
 	// in                   out
 	// -->[ c1 ] ----> [ c2 ]-->
 	//
 
-	in <- 1
-	in <- 2
-	in <- 3
+	done := make(chan int)
 
-	fmt.Println("wait 5 secs ...")
-	time.Sleep(5 * time.Second)
+	// produce some input
+	go producer(N, in)
+	// consome some output
+	go consumer(N, out, done)
+
+	// Wait until all N receiver by consumer
+	<-done
 }
