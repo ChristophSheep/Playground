@@ -40,8 +40,9 @@ func check(in <-chan int, out chan<- int, cond func(int) bool, done chan<- bool)
 		if cond(val) {
 			fmt.Println("check", "val", val, " if val < 2, send now done!!")
 			done <- true
+		} else {
+			out <- val
 		}
-		out <- val
 	}
 }
 
@@ -84,9 +85,9 @@ func main() {
 	//     +-----4-| <2 |-3-----+
 	//     |       +----+       |
 	//     4                    3
-	//   +-v-+     +----+     +-^-+     [ ------- ]
-	//   | 8 |-1-->| /2 |-2---| R |-4-->[ display ]
-	//   +---+     +----+     +---+     [ ------- ]
+	//   +-v-+     +----+     +-^-+     / ------- \
+	//   | 8 |-1-->| /2 |-2---| R |-4-->| display |
+	//   +---+     +----+     +---+     L ------- J
 	//                                      | |
 	//                                    /-----/
 	//
