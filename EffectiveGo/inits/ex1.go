@@ -31,6 +31,7 @@ func init() {
 
 }
 
+// Exampe 1 show how package init function works
 func Example1() {
 
 	flag.Parse() // parse 'gopath'-flag

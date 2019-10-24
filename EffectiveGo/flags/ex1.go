@@ -16,6 +16,7 @@ func init() {
 	flag.StringVar(&path, "path", "./images/", "path to images")
 }
 
+// Example 1 show how flags works
 func Example1() {
 	flag.Parse()
 

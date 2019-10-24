@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Example 2 shows how to read a string into a buffer
 func Example1() {
 	buf := make([]byte, 3, 3)
 	r := strings.NewReader("Das ist ein String.")
@@ -18,6 +19,8 @@ func Example1() {
 	}
 }
 
+// Example 2 shows that index of rune is different
+// because a character can have more then one byte
 func Example2() {
 	str := "日本\x80語"
 	var r rune = '\u672C' // 本 rune is a char in other languages
@@ -28,6 +31,7 @@ func Example2() {
 	}
 }
 
+// Example 3 is working with runes
 func Example3() {
 	str := "日本\x80語" //UTF-8
 	r := strings.NewReader(str)

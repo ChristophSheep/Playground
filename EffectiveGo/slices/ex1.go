@@ -2,29 +2,12 @@ package slices
 
 import (
 	"fmt"
-	"os"
 	"time"
 )
 
 var (
 	zs = []int{1, 2, 3}
 )
-
-var (
-	home   = os.Getenv("HOME")
-	user   = os.Getenv("USER")
-	gopath = os.Getenv("GOPATH")
-)
-
-func init() {
-
-	fmt.Println("init() called")
-	fmt.Println()
-	fmt.Println("home:", home)
-	fmt.Println("user:", user)
-	fmt.Println("gopath:", gopath)
-	fmt.Println()
-}
 
 func Example0() {
 	fmt.Println("Example0:")
