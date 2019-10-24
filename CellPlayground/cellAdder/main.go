@@ -78,12 +78,12 @@ func Console(done chan<- bool, cmds map[string]func()) {
 func emit(in chan<- int, out <-chan int) {
 	start := time.Now()
 
+	// Send 1 into chain
 	in <- 1
+	// Wait until it comes out of the chain
 	val := <-out
-
-	end := time.Now()
-	elapsed := end.Sub(start)
-	fmt.Println("elapsed:", elapsed, "val:", val)
+	elapsed := time.Now().Sub(start)
+	fmt.Println("Value took ", elapsed, " to run through 'add1'-adder chain, out val:", val)
 }
 
 func inputN() int {
