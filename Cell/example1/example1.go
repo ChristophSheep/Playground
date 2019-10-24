@@ -8,6 +8,7 @@ import (
 	"github.com/mysheep/cell/brain"
 	"github.com/mysheep/cell/integer"
 	"github.com/mysheep/console"
+	"github.com/mysheep/timed"
 )
 
 func print(ys []int) {
@@ -94,22 +95,22 @@ func Run() {
 
 	S := 5
 
-	bIn := make(chan brain.FloatTime, 100) // buffered body input for aggretion of all synapses
-	sIns := make([]chan brain.SignalTime, S)
+	bIn := make(chan timed.FloatTime, 100) // buffered body input for aggretion of all synapses
+	sIns := make([]chan timed.SignalTime, S)
 	weights := make([]float64, S)
 
 	for j := 0; j < S; j++ {
-		sIns[j] = make(chan brain.SignalTime)
+		sIns[j] = make(chan timed.SignalTime)
 		weights[j] = float64(rand.Intn(7))
 		go brain.Synapse(&weights[j], sIns[j], bIn)
 	}
 
 	A := 1
-	axIn := make(chan brain.SignalTime)
-	axOuts := make([]chan brain.SignalTime, A)
+	axIn := make(chan timed.SignalTime)
+	axOuts := make([]chan timed.SignalTime, A)
 
 	for j := 0; j < A; j++ {
-		axOuts[j] = make(chan brain.SignalTime)
+		axOuts[j] = make(chan timed.SignalTime)
 		go brain.Writer(axOuts[j], fmt.Sprintf("out%d", j))
 	}
 	go brain.Body(bIn, axIn, brain.THRESHOLD)
@@ -213,7 +214,7 @@ func Run() {
 			}
 		},
 		"cell": func(params []string) {
-			one := brain.MakeSignalTime(true, time.Now())
+			one := timed.MakeSignalTime(true, time.Now())
 			for ii := 0; ii < 100; ii++ {
 				i := rand.Intn(S)
 				sIns[i] <- one

@@ -5,19 +5,21 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/mysheep/timed"
 )
 
 // ----------------------------------------------------------------------------
 // Cell parts
 // ----------------------------------------------------------------------------
 
-func Synapse(weight *float64, in <-chan SignalTime, out chan<- FloatTime) func() {
+func Synapse(weight *float64, in <-chan timed.SignalTime, out chan<- timed.FloatTime) func() {
 
 	for {
 		signal := <-in
-		val := FloatTime{val: 0.0, time: signal.time}
-		if signal.val {
-			val = FloatTime{val: *weight, time: signal.time}
+		val := timed.MakeFloatTime(0.0, signal.Time())
+		if signal.Val() {
+			val = timed.MakeFloatTime(*weight, signal.Time())
 		}
 		out <- val
 	}
@@ -27,17 +29,17 @@ var (
 	THRESHOLD = 10.0
 )
 
-func Body(agg <-chan FloatTime, out chan<- SignalTime, threshold float64) {
+func Body(agg <-chan timed.FloatTime, out chan<- timed.SignalTime, threshold float64) {
 
 	sum := 0.0
 
-	one := SignalTime{val: true, time: time.Now()}
-	zero := SignalTime{val: false, time: time.Now()}
+	one := timed.MakeSignalTime(true, time.Now())
+	zero := timed.MakeSignalTime(false, time.Now())
 
 	for {
 		select {
 		case val := <-agg:
-			sum = sum + val.val
+			sum = sum + val.Val()
 			if sum > threshold {
 				for ; sum > threshold; sum = sum - threshold {
 					out <- one
@@ -49,7 +51,7 @@ func Body(agg <-chan FloatTime, out chan<- SignalTime, threshold float64) {
 	}
 }
 
-func Axon(in <-chan SignalTime, outs []chan SignalTime) {
+func Axon(in <-chan timed.SignalTime, outs []chan timed.SignalTime) {
 	for {
 		val := <-in
 		for _, out := range outs {
@@ -58,7 +60,7 @@ func Axon(in <-chan SignalTime, outs []chan SignalTime) {
 	}
 }
 
-func Display(in <-chan SignalTime, text string) {
+func Display(in <-chan timed.SignalTime, text string) {
 	for {
 		x := <-in
 		fmt.Println(getNow(), "-", text, x.String())
@@ -69,7 +71,7 @@ var (
 	filenameTemplate = "cell_data_%s.txt"
 )
 
-func Writer(in <-chan SignalTime, name string) {
+func Writer(in <-chan timed.SignalTime, name string) {
 
 	file, err := os.Create(fmt.Sprintf(filenameTemplate, name))
 	if err != nil {
@@ -92,7 +94,7 @@ func Writer(in <-chan SignalTime, name string) {
 
 	for val := range in {
 		setFirst(&flag, &first)
-		s := fmt.Sprintf("%0.3f\t%t\n", getDelta(first), val.val) // TODO
+		s := fmt.Sprintf("%0.3f\t%t\n", getDelta(first), val.Val()) // TODO
 		s = strings.Replace(s, ".", ",", -1)
 		file.WriteString(s)
 	}

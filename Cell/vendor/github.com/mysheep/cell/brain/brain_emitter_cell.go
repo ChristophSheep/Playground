@@ -1,6 +1,10 @@
 package brain
 
-import "time"
+import (
+	"time"
+
+	"github.com/mysheep/timed"
+)
 
 // ----------------------------------------------------------------------------
 // EmitterCell has only outputs
@@ -16,19 +20,19 @@ import "time"
 
 type EmitterCell struct {
 	name    string
-	outputs []chan SignalTime
+	outputs []chan timed.SignalTime
 }
 
 func (c *EmitterCell) Name() string {
 	return c.name
 }
 
-func (c *EmitterCell) OutputConnect(ch chan SignalTime /*not used*/) {
+func (c *EmitterCell) OutputConnect(ch chan timed.SignalTime /*not used*/) {
 	c.outputs = append(c.outputs, ch)
 }
 
 func (c *EmitterCell) EmitOne(t time.Time) {
-	one := SignalTime{val: true, time: t}
+	one := timed.MakeSignalTime(true, t)
 	for _, ch := range c.outputs {
 		ch <- one
 	}
@@ -37,6 +41,6 @@ func (c *EmitterCell) EmitOne(t time.Time) {
 func MakeEmitterCell(name string) *EmitterCell {
 	return &EmitterCell{
 		name:    name,
-		outputs: make([]chan SignalTime, 0),
+		outputs: make([]chan timed.SignalTime, 0),
 	}
 }

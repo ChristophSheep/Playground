@@ -3,6 +3,8 @@ package brain
 import (
 	"fmt"
 	"time"
+
+	"github.com/mysheep/timed"
 )
 
 // ----------------------------------------------------------------------------
@@ -46,7 +48,7 @@ const MAXAGE = 1 // max age in seconds of soma in multicell
 
 type weightInput struct {
 	weight float64
-	input  chan SignalTime
+	input  chan timed.SignalTime
 }
 
 type MultiCell struct {
@@ -58,10 +60,10 @@ type MultiCell struct {
 
 	weightedInputs []weightInput
 
-	outputs []chan SignalTime
+	outputs []chan timed.SignalTime
 
-	bodyIn  chan FloatTime  // Drendrid, collect all weighted inputs
-	bodyOut chan SignalTime // Fire out to axon
+	bodyIn  chan timed.FloatTime  // Drendrid, collect all weighted inputs
+	bodyOut chan timed.SignalTime // Fire out to axon
 }
 
 func (c *MultiCell) SetWeight(i int, weight float64) {
@@ -82,11 +84,11 @@ func (c *MultiCell) Name() string {
 	return c.name
 }
 
-func (c *MultiCell) OutputConnect(ch chan SignalTime) {
+func (c *MultiCell) OutputConnect(ch chan timed.SignalTime) {
 	c.outputs = append(c.outputs, ch)
 }
 
-func (c *MultiCell) InputConnect(ch chan SignalTime, weight float64) {
+func (c *MultiCell) InputConnect(ch chan timed.SignalTime, weight float64) {
 	// TODO: Input and Weights should be a struct
 	c.weightedInputs = append(c.weightedInputs, weightInput{weight: weight, input: ch})
 	//c.inputs = append(c.inputs, ch)
@@ -107,10 +109,10 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 		//weights: make([]float64, 0, 1024),
 
 		weightedInputs: make([]weightInput, 0, 1024),
-		outputs:        make([]chan SignalTime, 0, 1024),
+		outputs:        make([]chan timed.SignalTime, 0, 1024),
 
-		bodyIn:  make(chan FloatTime, 1024), // size of inputs, so that they not need to wait
-		bodyOut: make(chan SignalTime, 10),
+		bodyIn:  make(chan timed.FloatTime, 1024), // size of inputs, so that they not need to wait
+		bodyOut: make(chan timed.SignalTime, 10),
 	}
 
 	go c.soma(threshold)
@@ -130,9 +132,9 @@ func (c *MultiCell) synapse(index int) func() {
 
 	for {
 		signal := <-c.weightedInputs[index].input
-		val := FloatTime{val: 0.0, time: signal.time}
-		if signal.val {
-			val = FloatTime{val: c.weightedInputs[index].weight, time: signal.time}
+		val := timed.MakeFloatTime(0.0, signal.Time())
+		if signal.Val() {
+			val = timed.MakeFloatTime(c.weightedInputs[index].weight, signal.Time())
 		}
 		c.bodyIn <- val
 	}
@@ -146,19 +148,19 @@ func (c *MultiCell) soma(threshold float64) {
 	const EPSILON = 0.5 // TODO Float64 has problems
 
 	var (
-		fire = func() { c.bodyOut <- SignalTime{val: true, time: time.Now()} }
-		sums = MakeFloatSums(MAXAGE)
+		fire = func() { c.bodyOut <- timed.MakeSignalTime(true, time.Now()) }
+		sums = timed.MakeFloatSums(MAXAGE)
 	)
 
 	for {
 		select {
 		case val := <-c.bodyIn:
-			sums.AddVal(val)
+			sums.Add(val)
 
-			if sum, ok := sums.getSum(val.time); ok && sum >= (threshold-EPSILON) {
+			if sum, ok := sums.Sum(val.Time()); ok && sum >= (threshold-EPSILON) {
 				fmt.Printf("%s -> sum: %f, threshold: %f", c.name, sum, threshold)
-				fire()                  // fire action potential
-				sums.resetSum(val.time) // go back to rest level
+				fire()                    // fire action potential
+				sums.ResetSum(val.Time()) // go back to rest level
 			}
 		}
 	}
@@ -173,7 +175,7 @@ func (c *MultiCell) axon() {
 		for _, out := range c.outputs {
 			// Fire to all outputs with goroutines
 			// to rush out the signal
-			go func(out chan SignalTime, val SignalTime) {
+			go func(out chan timed.SignalTime, val timed.SignalTime) {
 				out <- val
 			}(out, val)
 		}

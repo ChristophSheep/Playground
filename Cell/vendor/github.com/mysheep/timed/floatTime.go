@@ -1,4 +1,4 @@
-package brain
+package timed
 
 import (
 	"fmt"
@@ -8,6 +8,14 @@ import (
 type FloatTime struct {
 	val  float64
 	time time.Time
+}
+
+func (x *FloatTime) Time() time.Time {
+	return x.time
+}
+
+func (x *FloatTime) Val() float64 {
+	return x.val
 }
 
 func (x *FloatTime) String() string {

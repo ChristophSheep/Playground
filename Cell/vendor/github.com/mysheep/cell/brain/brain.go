@@ -2,6 +2,8 @@ package brain
 
 import (
 	"time"
+
+	"github.com/mysheep/timed"
 )
 
 // ----------------------------------------------------------------------------
@@ -15,11 +17,11 @@ const TIME_FORMAT = "15:04:05.00000"
 // ----------------------------------------------------------------------------
 
 type InputConnector interface {
-	InputConnect(ch chan SignalTime, weight float64)
+	InputConnect(ch chan timed.SignalTime, weight float64)
 }
 
 type OutputConnector interface {
-	OutputConnect(ch chan SignalTime)
+	OutputConnect(ch chan timed.SignalTime)
 }
 
 type Namer interface {
@@ -31,7 +33,7 @@ type Namer interface {
 // ----------------------------------------------------------------------------
 
 func ConnectBy(out OutputConnector, in InputConnector, weight float64) {
-	ch := make(chan SignalTime, 10)
+	ch := make(chan timed.SignalTime, 10)
 	out.OutputConnect(ch)
 	in.InputConnect(ch, weight)
 }

@@ -15,6 +15,12 @@ type FloatSums struct {
 	maxAge int
 }
 
+func MakeFloatSums(maxAgeSeconds int) FloatSums {
+	return FloatSums{
+		sums:   map[time.Time]float64{},
+		maxAge: maxAgeSeconds}
+}
+
 func MakeFloatTime(val float64, time time.Time) FloatTime {
 	return FloatTime{
 		val:  val,
@@ -36,6 +42,10 @@ func (c *FloatSums) AddVals(ts ...FloatTime) {
 	}
 }
 
+func (c *FloatSums) ShowMap() {
+	fmt.Printf("map: %v \n", c.sums)
+}
+
 func (c *FloatSums) isOld(t time.Time) bool {
 	delta := time.Duration(c.maxAge) * time.Second
 	return time.Now().Sub(t) > delta
@@ -47,14 +57,4 @@ func (c *FloatSums) removeOld() {
 			delete(c.sums, key)
 		}
 	}
-}
-
-func (c *FloatSums) ShowMap() {
-	fmt.Printf("map: %v \n", c.sums)
-}
-
-func MakeFloatSums(maxAgeSeconds int) FloatSums {
-	return FloatSums{
-		sums:   map[time.Time]float64{},
-		maxAge: maxAgeSeconds}
 }
