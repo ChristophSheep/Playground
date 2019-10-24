@@ -1,15 +1,17 @@
 package generic
 
+// Inspired by Alias Wavefront Maya way of creating connectable components
+
 //     +--------+
 // a -->        |
 //     |   &&   >---- c=a+b, d=a-b
 // b -->        |
 //     +--------+
 
-type Box interface{}
+type Any interface{}
 
 type Channel struct {
-	ch          chan Box
+	ch          chan Any
 	typ         string
 	name        string
 	isReadable  bool
@@ -33,16 +35,18 @@ func registerCell(typ string, register map[string](func() Cell)) {
 
 		// register channels
 		channelA := registerChannel(Channel{typ: "int", name: "a", isWriteable: true, isReadable: true})
-		channelB := registerChannel(Channel{typ: "int", name: "a", isWriteable: true, isReadable: true})
-		channelC := registerChannel(Channel{typ: "int", name: "a", isWriteable: true, isReadable: false})
-		channelD := registerChannel(Channel{typ: "int", name: "a", isWriteable: true, isReadable: false})
+		channelB := registerChannel(Channel{typ: "int", name: "b", isWriteable: true, isReadable: true})
+		channelC := registerChannel(Channel{typ: "int", name: "c", isWriteable: true, isReadable: false})
+		channelD := registerChannel(Channel{typ: "int", name: "d", isWriteable: true, isReadable: false})
 
 		// register calc fn
+		// calcFn is a function that calcs output by given input
 		calcFn := func() {
 
 			valA := <-channelA.ch
 			valB := <-channelB.ch
 
+			// TODO: Convert by given type string
 			valC := valA.(int) + valB.(int)
 			valD := valA.(int) - valB.(int)
 

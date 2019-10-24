@@ -5,9 +5,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/mysheep/cell"
 	"github.com/mysheep/cell/brain"
-	"github.com/mysheep/cell/brain/integer"
+	"github.com/mysheep/cell/console"
+	"github.com/mysheep/cell/integer"
 )
 
 func print(ys []int) {
@@ -235,7 +235,7 @@ func Run() {
 		},
 	}
 
-	go cell.Console(cmds)
+	go console.Go(cmds)
 
 	// Wait until Done
 	//

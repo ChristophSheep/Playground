@@ -14,6 +14,8 @@ var (
 	gopath = os.Getenv("GOPATH")
 )
 
+// init is called when package is loaded
+
 func init() {
 	if user == "" {
 		log.Fatal("$User user set")
@@ -43,8 +45,8 @@ func Example1() {
 	ps := "\\|/-"
 	qs := "-/|\\"
 	for ; i < 60; i++ {
-		fmt.Printf("\t%c %2d sec %c\r", qs[j], i, ps[j]) // progress bar
-		time.Sleep(500 * time.Millisecond)
+		fmt.Printf("\t %#U %2d sec %c\r", qs[j], i, ps[j]) // progress bar
+		time.Sleep(50 * time.Millisecond)
 		if j++; j >= len(ps) {
 			j = 0
 		}

@@ -3,6 +3,7 @@ package slices
 import (
 	"fmt"
 	"os"
+	"time"
 )
 
 var (
@@ -87,4 +88,101 @@ func Example1() {
 	xs[1] = 0
 	fmt.Println("xs ..", xs)
 	fmt.Println("ys ..", ys)
+}
+
+func cdr(ys []int) []int {
+	if len(ys) == 0 {
+		return ys
+	}
+	return ys[1:]
+}
+
+func car(ys []int) []int {
+	if len(ys) == 0 {
+		panic("car of empty list not defined")
+	}
+	return ys[0:1]
+}
+
+// Keyword 'map' already reserved for hashmap
+//
+func maps(ys []int, fn func(int) int) []int {
+	if len(ys) == 0 {
+		return ys // or make([]int, 0) // or nil
+	}
+	xs := car(ys)
+	xs[0] = fn(xs[0])
+	return append(xs, maps(cdr(ys), fn)...)
+}
+
+func Example2() {
+	// create a map function
+
+	xs := make([]int, 0, 3) // 0 elements but cap 3
+	xs = append(xs, 1, 2, 3)
+
+	xs = maps(xs, func(x int) int { return x + 1 })
+	fmt.Println("xs:", xs)
+
+	//ys := [3]int{4, 5, 6} // array
+	//ys = append(ys, 7) // does not work
+
+	//ys := [...]int{4, 5, 6} // array
+	//ys = append(ys, 7) // does not work
+
+	ys := []int{4, 5, 6}
+	ys = append(ys, 7) // work .. append only work with slices
+	fmt.Println("ys:", ys)
+}
+
+func Example3() {
+	const N = 4096
+
+	fmt.Println("test - append", N, "channels")
+	var test = func(fn func()) {
+		start := time.Now()
+		fn()
+		duration := time.Now().Sub(start).Seconds() * 1000.0
+		fmt.Printf("it took %.3f ms\n", duration)
+	}
+
+	var f0 = func() {
+		ss := make([]chan int, 0, N)
+		ch := make(chan int)
+		for i := 0; i < N; i++ {
+			ss = append(ss, ch)
+		}
+	}
+
+	var f1 = func() {
+		ss := make([]chan int, 0)
+		for i := 0; i < N; i++ {
+			ss = append(ss, make(chan int))
+		}
+	}
+
+	var f2 = func() {
+		ss := make([]chan int, N, N)
+		for i := 0; i < N; i++ {
+			ss[i] = make(chan int)
+		}
+	}
+
+	var f3 = func() {
+		ss := make([]chan int, N, N)
+		ch := make(chan int)
+		for i := 0; i < N; i++ {
+			ss[i] = ch
+		}
+	}
+
+	test(f0)
+	test(f1)
+	test(f2)
+	test(f3)
+
+	//it took 0.000113012 s
+	//it took 0.00225483 s
+	//it took 0.001857907 s
+	//it took 0.000133485 s
 }

@@ -1,4 +1,4 @@
-package cell
+package console
 
 import (
 	"bufio"
@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	consolePS1 = "go-cell> "
+	consolePS1 = "go> "
 )
 
-func Console2(cmdFns map[string]func()) {
+func GoX(cmdFns map[string]func()) {
 
 	fmt.Println("Press ESC button or Ctrl-C to exit this program")
 	fmt.Println("Press any key to see their ASCII code follow by Enter")
@@ -35,7 +35,7 @@ func Console2(cmdFns map[string]func()) {
 
 }
 
-func Console(cmdFns map[string]func([]string)) {
+func Go(cmdFns map[string]func([]string)) {
 
 	reader := bufio.NewReader(os.Stdin)
 

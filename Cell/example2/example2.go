@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mysheep/cell"
 	"github.com/mysheep/cell/brain"
+	"github.com/mysheep/cell/console"
 	"github.com/mysheep/imgx"
 )
 
@@ -257,7 +257,7 @@ func Run(spec Spec) {
 		},
 	}
 
-	go cell.Console(cmds)
+	go console.Go(cmds)
 
 	// Wait until Done
 	//
