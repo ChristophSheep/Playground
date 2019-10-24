@@ -11,15 +11,22 @@ type Job struct {
 	folder string
 }
 
+func NewJob(val Any, folder string) *Job {
+	return &Job{val, folder}
+}
+
 type JobResult struct {
 	val Any
 }
 
+// NewJobReselt create a new job result
 func NewJobResult(val Any) *JobResult {
 	return &JobResult{val: val}
 }
 
 // Worker is doing the work
+// He wait for a jobs, if one is there he takes it
+// do the work and send out the result into the results channel
 // see https://gobyexample.com/worker-pools
 func Worker(id int, jobs <-chan Job, results chan<- JobResult, doWork func(Job) *JobResult) {
 	for job := range jobs { // see https://gobyexample.com/range-over-channels
@@ -30,17 +37,17 @@ func Worker(id int, jobs <-chan Job, results chan<- JobResult, doWork func(Job) 
 	}
 }
 
-// SendJobs send some job into the job channel
-func SendJobs(jobs chan<- Job) {
-	for j := 1; j <= 5; j++ {
-		jobs <- Job{val: j, folder: ""}
+// SendJobs send some (5) jobs into the job channel
+func SendJobs(n int, jobs chan<- Job) {
+	for j := 1; j <= n; j++ {
+		jobs <- *NewJob(j, ".")
 	}
 	close(jobs)
 }
 
-// GetResults results from the channel and print it
-func GetResults(results <-chan JobResult, quit chan bool) {
-	for j := 1; j <= 5; j++ {
+// GetResults gets the all results from the channel and print it
+func GetResults(n int, results <-chan JobResult, quit chan bool) {
+	for j := 1; j <= n; j++ {
 		res := <-results
 		fmt.Printf("Result %d val: %v\n", j, res.val)
 	}

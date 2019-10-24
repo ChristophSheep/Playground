@@ -6,7 +6,7 @@ import (
 	"github.com/mysheep/sums"
 )
 
-func main_OLD3() {
+func main() {
 
 	now := time.Now()
 
