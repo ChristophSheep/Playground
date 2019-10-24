@@ -44,23 +44,38 @@ const MAXAGE = 1 // max age in seconds of soma in multicell
 // Public
 // ----------------------------------------------------------------------------
 
+type weightInput struct {
+	weight float64
+	input  chan SignalTime
+}
+
 type MultiCell struct {
 	name string
 
-	inputs  []chan SignalTime
-	weights []float64
+	// TODO: INputs and Weights should be a struct
+	//inputs  []chan SignalTime
+	//weights []float64
+
+	weightedInputs []weightInput
+
 	outputs []chan SignalTime
 
-	bodyIn  chan FloatTime
-	bodyOut chan SignalTime
+	bodyIn  chan FloatTime  // Drendrid, collect all weighted inputs
+	bodyOut chan SignalTime // Fire out to axon
 }
 
 func (c *MultiCell) SetWeight(i int, weight float64) {
-	c.weights[i] = weight
+	if i >= 0 && i < len(c.weightedInputs) {
+		c.weightedInputs[i].weight = weight
+	}
 }
 
 func (c *MultiCell) Weights() []float64 {
-	return c.weights
+	weights := make([]float64, len(c.weightedInputs))
+	for i := 0; i < len(c.weightedInputs); i++ {
+		weights[i] = c.weightedInputs[i].weight
+	}
+	return weights
 }
 
 func (c *MultiCell) Name() string {
@@ -72,10 +87,12 @@ func (c *MultiCell) OutputConnect(ch chan SignalTime) {
 }
 
 func (c *MultiCell) InputConnect(ch chan SignalTime, weight float64) {
-	c.inputs = append(c.inputs, ch)
-	c.weights = append(c.weights, weight)
-	last := len(c.weights) - 1 // TODO: Refactor
-	go synapse(&c.weights[last], ch, c.bodyIn)
+	// TODO: Input and Weights should be a struct
+	c.weightedInputs = append(c.weightedInputs, weightInput{weight: weight, input: ch})
+	//c.inputs = append(c.inputs, ch)
+	//c.weights = append(c.weights, weight)
+	lastIndex := len(c.weightedInputs) - 1
+	go c.synapse(lastIndex)
 }
 
 /*
@@ -86,16 +103,18 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 	c := MultiCell{
 		name: name,
 
-		inputs:  make([]chan SignalTime, 0),
-		weights: make([]float64, 0),
-		outputs: make([]chan SignalTime, 0),
+		//inputs:  make([]chan SignalTime, 0, 1024),
+		//weights: make([]float64, 0, 1024),
 
-		bodyIn:  make(chan FloatTime, 4096), // size of inputs, so that they not need to wait
-		bodyOut: make(chan SignalTime),
+		weightedInputs: make([]weightInput, 0, 1024),
+		outputs:        make([]chan SignalTime, 0, 1024),
+
+		bodyIn:  make(chan FloatTime, 1024), // size of inputs, so that they not need to wait
+		bodyOut: make(chan SignalTime, 10),
 	}
 
-	go soma(&c, threshold)
-	go axon(&c)
+	go c.soma(threshold)
+	go c.axon()
 
 	return &c
 }
@@ -107,41 +126,39 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 /*
 	Weighted synapae
 */
-func synapse(weight *float64, in <-chan SignalTime, out chan<- FloatTime) func() {
+func (c *MultiCell) synapse(index int) func() {
 
 	for {
-		signal := <-in
+		signal := <-c.weightedInputs[index].input
 		val := FloatTime{val: 0.0, time: signal.time}
 		if signal.val {
-			val = FloatTime{val: *weight, time: signal.time}
+			val = FloatTime{val: c.weightedInputs[index].weight, time: signal.time}
 		}
-		out <- val
+		c.bodyIn <- val
 	}
 }
 
 /*
 	Soma or also called cell body with threshold to fire
 */
-func soma(c *MultiCell, threshold float64) {
+func (c *MultiCell) soma(threshold float64) {
 
-	// seconds
-	sums := MakeFloatSums(MAXAGE)
+	const EPSILON = 0.5 // TODO Float64 has problems
 
-	var fire = func() {
-		c.bodyOut <- SignalTime{val: true, time: time.Now()}
-	}
+	var (
+		fire = func() { c.bodyOut <- SignalTime{val: true, time: time.Now()} }
+		sums = MakeFloatSums(MAXAGE)
+	)
 
 	for {
 		select {
 		case val := <-c.bodyIn:
 			sums.AddVal(val)
 
-			const EPSILON = 0.5 // TODO Float64 has problems
-
 			if sum, ok := sums.getSum(val.time); ok && sum >= (threshold-EPSILON) {
 				fmt.Printf("%s -> sum: %f, threshold: %f", c.name, sum, threshold)
-				fire()
-				sums.resetSum(val.time)
+				fire()                  // fire action potential
+				sums.resetSum(val.time) // go back to rest level
 			}
 		}
 	}
@@ -150,11 +167,15 @@ func soma(c *MultiCell, threshold float64) {
 /*
 	Axon of a multi cell
 */
-func axon(c *MultiCell) {
+func (c *MultiCell) axon() {
 	for {
 		val := <-c.bodyOut
 		for _, out := range c.outputs {
-			out <- val
+			// Fire to all outputs with goroutines
+			// to rush out the signal
+			go func(out chan SignalTime, val SignalTime) {
+				out <- val
+			}(out, val)
 		}
 	}
 }

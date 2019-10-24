@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/mysheep/cell"
+	"github.com/mysheep/cell/console"
 	"github.com/mysheep/playground/Cell/example1"
 	"github.com/mysheep/playground/Cell/example2"
 )
@@ -42,6 +42,6 @@ func main() {
 		},
 	}
 
-	go cell.Console(cmds)
+	go console.Go(cmds)
 	waitUntilDone()
 }
