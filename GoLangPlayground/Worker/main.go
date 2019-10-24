@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -8,13 +9,16 @@ import (
 )
 
 func doWork(job worker.Job) *worker.JobResult {
-	time.Sleep(time.Duration(1+rand.Intn(2)) * time.Second)
+	// Simulate some work
+	time.Sleep(time.Duration(1+rand.Intn(1)) * time.Second)
+	//
 	return worker.NewJobResult(1) // TODO
 }
 
 func main() {
 
 	const N = 2
+	const J = 5
 
 	// Create channels
 	//
@@ -31,11 +35,12 @@ func main() {
 
 	// Create some jobs for the workers
 	//
-	go worker.SendJobs(jobs)
+	go worker.SendJobs(J, jobs)
 
 	// Receive results of the workers
 	//
-	go worker.GetResults(results, quit)
+	go worker.GetResults(J, results, quit)
 
 	<-quit
+	fmt.Println("The workers finished all the work .. Bye")
 }
