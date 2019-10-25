@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const EPSILON = 2 * time.Millisecond
+
 type FloatSums struct {
 	sums   map[time.Time]float64
 	maxAge int
@@ -22,15 +24,29 @@ func MakeFloatSums(maxAgeSeconds int) FloatSums {
 		maxAge: maxAgeSeconds}
 }
 
+// Find the key (time) which is not far away then EPSILON
+func (c *FloatSums) findKey(t time.Time) (time.Time, bool) {
+	for tm, _ := range c.sums {
+		if t.Sub(tm) <= EPSILON {
+			return tm, true
+		}
+	}
+	return t, false
+}
+
 // Add add the float64 value with timestamp
 // to the sum with the same timestamp
 func (c *FloatSums) Add(t FloatTime) {
-	if sum, ok := c.sums[t.time]; ok {
-		c.sums[t.time] = sum + t.val
+
+	tm, ok := c.findKey(t.time)
+
+	if ok {
+		c.sums[tm] = c.sums[tm] + t.val
 	} else {
-		c.sums[t.time] = t.val
-		c.removeOld()
+		c.sums[tm] = t.val
 	}
+
+	c.removeOld()
 }
 
 // Adds adds more then one value
