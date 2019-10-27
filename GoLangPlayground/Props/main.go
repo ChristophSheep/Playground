@@ -143,10 +143,45 @@ func printProps(p props.ObjWithProps) {
 	}
 }
 
+// Optional Value
+type IntValue struct {
+	val      int
+	hasValue bool
+}
+
+func (i *IntValue) HasValue() bool {
+	return i.hasValue
+}
+
+func (i *IntValue) Value() int {
+	if i.HasValue() == false {
+		panic("value is not set")
+	}
+	return i.val
+}
+
+func NewIntVal(val int) IntValue {
+	return IntValue{val, true}
+}
+
+func EmptyInVal() IntValue {
+	return IntValue{hasValue: false}
+}
+
+type foo struct {
+	name   string
+	age    IntValue
+	size   IntValue
+	weight IntValue
+}
+
 func main() {
 	p := MakePerson(&Person{firstname: "Noah", lastname: "Wilson", age: 21})
 	printProps(p)
 	fmt.Println()
 	pEmpty := MakeEmtpyPerson()
 	printProps(pEmpty)
+
+	f := foo{name: "foo", age: NewIntVal(6), size: EmptyInVal()}
+	fmt.Printf("foo %v", f)
 }
