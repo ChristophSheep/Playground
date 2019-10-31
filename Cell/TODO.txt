@@ -5,6 +5,8 @@
 - More examples
 - Find out how to changes weights and learning
 - Do not trust what you already know, seek always a better way
+- Learn with many pictures and count how of a synapse is used
+  then change the weights according to this
 
 ## Ideas
 

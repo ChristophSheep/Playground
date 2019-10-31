@@ -125,16 +125,29 @@ func MakeMultiCell(name string, threshold float64) *MultiCell {
 // Private
 // ----------------------------------------------------------------------------
 
-/*
-	Weighted synapae
-*/
-func (c *MultiCell) synapse(index int) func() {
+// Synapse creates a weighted synapse
+// If a synapse receive a signal it weights this signal
+// and send this weighted into the cell body
+func (c *MultiCell) synapse(index int) {
 
+	// TODO: synapse used 1000times per hour or so ??
+	//
+	count := 0 // TODO: Change weights -> Simulate learning
 	for {
 		signal := <-c.weightedInputs[index].input
 		val := timed.MakeFloatTime(0.0, signal.Time())
 		if signal.Val() {
 			val = timed.MakeFloatTime(c.weightedInputs[index].weight, signal.Time())
+
+			// TODO
+			count = count + 1 // Zählen
+			if count > 10 {   // Entscheiden
+				fmt.Println("cell", c.name, "synapse", index, "was used", count, "times")
+				// Ändern
+				c.weightedInputs[index].weight = c.weightedInputs[index].weight * 1.1
+				// Reset
+				count = 0
+			}
 		}
 		c.bodyIn <- val
 	}
@@ -145,11 +158,12 @@ func (c *MultiCell) synapse(index int) func() {
 */
 func (c *MultiCell) soma(threshold float64) {
 
-	const EPSILON = 0.5 // TODO Float64 has problems
+	const EPSILON = 0.5
 
 	var (
-		fire = func() { c.bodyOut <- timed.MakeSignalTime(true, time.Now()) }
-		sums = timed.MakeFloatSums(MAXAGE)
+		fire        = func() { c.bodyOut <- timed.MakeSignalTime(true, time.Now()) }
+		sums        = timed.MakeFloatSums(MAXAGE)
+		hitTreshold = func(sum, threshold float64) bool { return sum >= (threshold - EPSILON) }
 	)
 
 	for {
@@ -157,7 +171,7 @@ func (c *MultiCell) soma(threshold float64) {
 		case val := <-c.bodyIn:
 			sums.Add(val)
 
-			if sum, ok := sums.Sum(val.Time()); ok && sum >= (threshold-EPSILON) {
+			if sum, ok := sums.Sum(val.Time()); ok && hitTreshold(sum, threshold) {
 				fmt.Printf("%s -> sum: %f, threshold: %f", c.name, sum, threshold)
 				fire()                    // fire action potential
 				sums.ResetSum(val.Time()) // go back to rest level
@@ -166,13 +180,11 @@ func (c *MultiCell) soma(threshold float64) {
 	}
 }
 
-/*
-	Axon of a multi cell
-*/
+// Axon represents the axon with multi terminal endings of a neuron
 func (c *MultiCell) axon() {
 	for {
 		val := <-c.bodyOut
-		for _, out := range c.outputs {
+		for _, out := range c.outputs { // TODO: Terminal endings
 			// Fire to all outputs with goroutines
 			// to rush out the signal
 			go func(out chan timed.SignalTime, val timed.SignalTime) {

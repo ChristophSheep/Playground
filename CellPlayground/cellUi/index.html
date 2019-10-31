@@ -6,6 +6,7 @@
 
         function init() {
             paper = getCtx();
+            window.requestAnimationFrame(draw);
         }
 
         function getCtx() {
@@ -50,20 +51,20 @@
             return function() {
                 fns.forEach(
                     function(fn) {
-                        fn();
+                        fn()
                     }
-                );
+                )
             }
         }
 
         function transform(t, fn) {
             return function() {
-                paper.save();
-                    paper.translate(t.x, t.y);
-                    paper.scale(t.sx, t.sy);
-                    fn();
-                paper.restore();
-            };
+                paper.save()
+                    paper.translate(t.x, t.y)
+                    paper.scale(t.sx, t.sy)
+                    fn()
+                paper.restore()
+            }
         }
 
         function style(s, fn) {
@@ -73,20 +74,115 @@
                     paper.strokeStyle = s.stroke;
                     paper.lineWidth   = s.strokeWidth;
                     fn()
-                paper.restore();
-            };
+                paper.restore()
+            }
+        }
+
+        // Cell components
+        //
+        function background(radius) {
+            return transform(
+                {x:0,y:0},
+                style(
+                    {fill:"lightgrey", stroke:"blue", strokeWidth:1},
+                    circle(radius)
+                )
+            )
+        }
+
+        function clamp(min,max,val) {
+            if (val < min) {
+                val = 0
+            }
+            if (val > max) {
+                val = 100
+            }
+            return val
+        }
+
+        function drendride(radius, percent) {
+
+            percent = clamp(0,100, percent)
+            
+            alpha = 40
+            width = radius*0.25
+
+            length = 360-2*alpha
+            alphaEnd = 360-alpha
+            alphaStart = alphaEnd - (length*percent/100) 
+
+            return group([
+                    style(
+                        {strokeWidth:width},
+                        arc(radius-width/2, alphaStart, alphaEnd)
+                    ),
+                    style(
+                        {strokeWidth:width},
+                        arc(radius-width/2, alpha, alpha+1)
+                    ),
+                    style(
+                        {strokeWidth:width},
+                        arc(radius-width/2, alphaEnd-1, alphaEnd)
+                    ),
+                    arc(radius-width, alpha, alphaEnd)
+                ])     
+        }
+
+        function soma(radius, percent) {
+            radius = radius*0.5 * percent/100
+            return style(
+                {fill:"lightblue", stroke:"blue", strokeWidth:2},
+                circle(radius)
+            )
+        }
+
+        function axon(radius, percent) {
+            length = 120
+            if (percent < 95) {
+                fillColor = "lightblue"
+            } else {
+                fillColor = "blue"
+            }
+            return transform(
+                {x:radius,y:0},
+                style(
+                    {fill:fillColor, stroke:"blue", strokeWidth:1},
+                    group([
+                        transform(
+                            {x:length/2,y:0},
+                            rect(length,5)
+                        ),
+                        circle(5),
+                    ])
+                )
+            )
+        }
+
+        function cell(radius,s, percent) {
+            alpha = 40
+            return style(s,
+                group([
+                    axon(radius,percent),
+                    background(radius),
+                    drendride(radius, percent),
+                    soma(radius, percent),
+                ])
+            )
         }
 
         //
         // DRAW
         //
         function draw() {
-                        
+
+            //paper.globalCompositeOperation = 'destination-over';
+            paper.clearRect(0,0,500,500);
+         
             var s = {
                 fill: "rgba(0,255,128,0.5)",
-                stroke: "red",
+                stroke: "blue", // default
                 strokeWidth: 1,
-            };
+            }
 
             var t = {
                 x : 70,
@@ -99,63 +195,19 @@
             // styleNode     (wrap)
             // shapeNode     (circle, rect, arc)
 
-            radius = 50
+            time = new Date()
+            radius = 70
             alpha = 50
+            percent = time.getMilliseconds()/10
 
-            // Cell background
-            transform(
-                t,
-                style(
-                    {fill:"lightgrey", stroke:"blue", strokeWidth:1},
-                    circle(radius+7)
-                )
-            )();
-
-            // Cell drendride/synapse area
-            transform(
-                t,
-                style(
-                    {stroke:"blue", strokeWidth:14}, 
-                    arc(radius, alpha, 360-alpha)
-                )
-            )();
-
-            // Cell body/soma
-            transform(
-                t,
-                style(
-                    {fill:"lightgrey", stroke:"blue", strokeWidth:5},
-                    circle(20)
-                )
-            )();
-
-            t1 = t
-
-            // Cell axon
-            transform(
-                t1,
-                style(
-                    {fill:"lightgrey", stroke:"blue"}, 
-                    rect(100, 10)
-                )
-            )();
-
-            // WORKS!!!
-
-            transform(
-                {x:350, y:250},
-                style(s,
-                    group([
-                        rect(50,50),
-                        transform(
-                            {x:0, y:0},
-                            arc(30,0,90)
-                        ),
-                        circle(10),
-                    ])
-                )
-            )();
-
+            var drawCell = transform(
+                {x:250,y:250},
+                cell(radius,s, percent)
+            )
+            drawCell()
+         
+            window.requestAnimationFrame(draw);
+            
         }
     </script>
 </head>

@@ -7,6 +7,8 @@ import (
 
 const EPSILON = 2 * time.Millisecond
 
+// FloatSums sums timed float64 values with the
+// nearly the same time by an EPSILON of currently 2ms
 type FloatSums struct {
 	sums   map[time.Time]float64
 	maxAge int

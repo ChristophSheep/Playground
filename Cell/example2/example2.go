@@ -183,8 +183,10 @@ func Run(spec Spec) {
 	done := make(chan bool)
 	waitUntilDone := func() { <-done }
 
-	//
+	// -------------
 	// Setup Network
+	// -------------
+	//
 	//           ObjectCell
 	// Retina    +-------+      DisplayCell
 	// [o]---w0->|       |
@@ -202,7 +204,6 @@ func Run(spec Spec) {
 		return
 	}
 
-	const EPSILON = 3.0 // TODO: ??
 	var countObjects = len(imgFiles)
 	var THRESHOLD = float64(spec.Size * spec.Size)
 
