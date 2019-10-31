@@ -3,47 +3,77 @@
     <script type="text/javascript">
 
         var paper;
+        var size;
 
         function init() {
-            paper = getCtx();
-            window.requestAnimationFrame(draw);
+            paper = getPaper()
+            size  = getSize() 
+            // Start animation
+            window.requestAnimationFrame(draw)
         }
 
-        function getCtx() {
+        function getPaper() {
             return document.getElementById("scene").getContext("2d")
         }
+
+        function getSize() {
+            width  = document.getElementById("scene").width
+            height = document.getElementById("scene").height
+            return {width:width,height:height}
+        }
+
         //
         // HELPERS
         //
         function deg2rad(x) {
-            return (x/180.0) * Math.PI;
+            return (x/180.0) * Math.PI
         }
+
+        function clamp(min,max,val) {
+            if (val < min) {
+                val = 0
+            }
+            if (val > max) {
+                val = 100
+            }
+            return val
+        }
+
         //
         // SHAPES
         //
         function circle(r) {
             return function() {
-                paper.beginPath();
-                paper.arc(0, 0, r, 0, Math.PI *2, true);
-                paper.fill();
-                paper.stroke();
+                paper.beginPath()
+                paper.arc(0, 0, r, 0, Math.PI *2, true)
+                paper.fill()
+                paper.stroke()
             };
         }
 
         function arc(r, a, b) {
             return function() {
-                paper.beginPath();
-                paper.arc(0, 0, r, deg2rad(a), deg2rad(b), false);
-                paper.stroke();
-            };
+                paper.beginPath()
+                paper.arc(0, 0, r, deg2rad(a), deg2rad(b), false)
+                paper.stroke()
+            }
         }
  
         function rect(w, h) {
             return function() {
-                paper.fillRect  (-w/2, -h/2, w, h);
-                paper.strokeRect(-w/2, -h/2, w, h); 
-            };
+                paper.fillRect  (-w/2, -h/2, w, h)
+                paper.strokeRect(-w/2, -h/2, w, h)
+            }
         }
+
+        function bezier(cp1x,cp1y,cp2x,cp2y,x,y) {
+            return function() {
+                paper.beginPath()
+                paper.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x,y)
+                paper.stroke()
+            }
+        }
+
         //
         // MODIFIERS
         //
@@ -81,84 +111,77 @@
         // Cell components
         //
         function background(radius) {
-            return transform(
-                {x:0,y:0},
-                style(
-                    {fill:"lightgrey", stroke:"blue", strokeWidth:1},
-                    circle(radius)
-                )
-            )
-        }
-
-        function clamp(min,max,val) {
-            if (val < min) {
-                val = 0
-            }
-            if (val > max) {
-                val = 100
-            }
-            return val
+            return circle(radius)
         }
 
         function drendride(radius, percent) {
 
-            percent = clamp(0,100, percent)
+            percent = clamp(0,100,percent)
             
             alpha = 40
             width = radius*0.25
 
-            length = 360-2*alpha
-            alphaEnd = 360-alpha
-            alphaStart = alphaEnd - (length*percent/100) 
+            alphaFull    = 360-alpha*2
+            alphaPercent = (alphaFull*percent/100)
+
+            alphaEnd     = 360-alpha
+            alphaStart   = alphaEnd - alphaPercent 
 
             return group([
-                    style(
-                        {strokeWidth:width},
-                        arc(radius-width/2, alphaStart, alphaEnd)
-                    ),
-                    style(
-                        {strokeWidth:width},
-                        arc(radius-width/2, alpha, alpha+1)
-                    ),
-                    style(
-                        {strokeWidth:width},
-                        arc(radius-width/2, alphaEnd-1, alphaEnd)
-                    ),
-                    arc(radius-width, alpha, alphaEnd)
-                ])     
+                // percentage
+                style(
+                    {strokeWidth:width},
+                    arc(radius-width/2, alphaStart, alphaEnd)
+                ),
+                // borders
+                style(
+                    {strokeWidth:width},
+                    arc(radius-width/2, alpha, alpha+1)
+                ),
+                style(
+                    {strokeWidth:width},
+                    arc(radius-width/2, alphaEnd-1, alphaEnd)
+                ),
+                arc(radius-width, alpha, alphaEnd)
+            ])     
         }
 
         function soma(radius, percent) {
-            radius = radius*0.5 * percent/100
+            radius = 3 + radius*0.5 * percent/100
             return style(
-                {fill:"lightblue", stroke:"blue", strokeWidth:2},
+                {fill:"blue", strokeWidth:2},
                 circle(radius)
             )
         }
 
-        function axon(radius, percent) {
-            length = 120
+        function getColor(percent) {
             if (percent < 95) {
                 fillColor = "lightblue"
             } else {
                 fillColor = "blue"
             }
+            return fillColor
+        }
+
+        function axon(radius, percent) {
+            length = 120
+            fillColor = getColor(percent)
             return transform(
                 {x:radius,y:0},
                 style(
-                    {fill:fillColor, stroke:"blue", strokeWidth:1},
+                    {fill:fillColor},
                     group([
                         transform(
                             {x:length/2,y:0},
-                            rect(length,5)
+                            rect(length,radius*0.1)
                         ),
-                        circle(5),
+                        circle(radius*0.15),
                     ])
                 )
             )
         }
 
-        function cell(radius,s, percent) {
+        function cell(radius,s,percent) {
             alpha = 40
             return style(s,
                 group([
@@ -166,6 +189,8 @@
                     background(radius),
                     drendride(radius, percent),
                     soma(radius, percent),
+                    bezier(-200,-100,-75,-100,0,0),
+                    bezier(-200,+100,-75,+100,0,0),
                 ])
             )
         }
@@ -176,10 +201,10 @@
         function draw() {
 
             //paper.globalCompositeOperation = 'destination-over';
-            paper.clearRect(0,0,500,500);
+            paper.clearRect(0,0,size.width,size.height);
          
             var s = {
-                fill: "rgba(0,255,128,0.5)",
+                fill  : "lightgrey",
                 stroke: "blue", // default
                 strokeWidth: 1,
             }
@@ -201,13 +226,13 @@
             percent = time.getMilliseconds()/10
 
             var drawCell = transform(
-                {x:250,y:250},
+                {x:size.width/2,y:size.height/2},
                 cell(radius,s, percent)
             )
             drawCell()
-         
-            window.requestAnimationFrame(draw);
-            
+
+            // Next loop
+            //window.requestAnimationFrame(draw)
         }
     </script>
 </head>
