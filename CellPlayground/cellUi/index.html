@@ -1,0 +1,166 @@
+<html>
+<head>
+    <script type="text/javascript">
+
+        var paper;
+
+        function init() {
+            paper = getCtx();
+        }
+
+        function getCtx() {
+            return document.getElementById("scene").getContext("2d")
+        }
+        //
+        // HELPERS
+        //
+        function deg2rad(x) {
+            return (x/180.0) * Math.PI;
+        }
+        //
+        // SHAPES
+        //
+        function circle(r) {
+            return function() {
+                paper.beginPath();
+                paper.arc(0, 0, r, 0, Math.PI *2, true);
+                paper.fill();
+                paper.stroke();
+            };
+        }
+
+        function arc(r, a, b) {
+            return function() {
+                paper.beginPath();
+                paper.arc(0, 0, r, deg2rad(a), deg2rad(b), false);
+                paper.stroke();
+            };
+        }
+ 
+        function rect(w, h) {
+            return function() {
+                paper.fillRect  (-w/2, -h/2, w, h);
+                paper.strokeRect(-w/2, -h/2, w, h); 
+            };
+        }
+        //
+        // MODIFIERS
+        //
+        function group(fns) {
+            return function() {
+                fns.forEach(
+                    function(fn) {
+                        fn();
+                    }
+                );
+            }
+        }
+
+        function transform(t, fn) {
+            return function() {
+                paper.save();
+                    paper.translate(t.x, t.y);
+                    paper.scale(t.sx, t.sy);
+                    fn();
+                paper.restore();
+            };
+        }
+
+        function style(s, fn) {
+            return function() {
+                paper.save();
+                    paper.fillStyle   = s.fill;
+                    paper.strokeStyle = s.stroke;
+                    paper.lineWidth   = s.strokeWidth;
+                    fn()
+                paper.restore();
+            };
+        }
+
+        //
+        // DRAW
+        //
+        function draw() {
+                        
+            var s = {
+                fill: "rgba(0,255,128,0.5)",
+                stroke: "red",
+                strokeWidth: 1,
+            };
+
+            var t = {
+                x : 70,
+                y : 70,
+                sx: 1.0,
+                sy: 1.0,
+            }
+
+            // transformNode (warp)
+            // styleNode     (wrap)
+            // shapeNode     (circle, rect, arc)
+
+            radius = 50
+            alpha = 50
+
+            // Cell background
+            transform(
+                t,
+                style(
+                    {fill:"lightgrey", stroke:"blue", strokeWidth:1},
+                    circle(radius+7)
+                )
+            )();
+
+            // Cell drendride/synapse area
+            transform(
+                t,
+                style(
+                    {stroke:"blue", strokeWidth:14}, 
+                    arc(radius, alpha, 360-alpha)
+                )
+            )();
+
+            // Cell body/soma
+            transform(
+                t,
+                style(
+                    {fill:"lightgrey", stroke:"blue", strokeWidth:5},
+                    circle(20)
+                )
+            )();
+
+            t1 = t
+
+            // Cell axon
+            transform(
+                t1,
+                style(
+                    {fill:"lightgrey", stroke:"blue"}, 
+                    rect(100, 10)
+                )
+            )();
+
+            // WORKS!!!
+
+            transform(
+                {x:350, y:250},
+                style(s,
+                    group([
+                        rect(50,50),
+                        transform(
+                            {x:0, y:0},
+                            arc(30,0,90)
+                        ),
+                        circle(10),
+                    ])
+                )
+            )();
+
+        }
+    </script>
+</head>
+<body onload="init();draw();">
+    <h1>Scene</h1>
+    <canvas id="scene" width="500" height="500" style="border:1px solid grey"></canvas>
+</body>
+</html>
