@@ -367,23 +367,40 @@
             p1.x = - 150
             return group([
                 quadCurve(p1,cp,p2),
-                //point2(cp),
                 synapse(radius,weight,alpha),
             ])
         }
 
+        function makeCons(weights) {
+            
+            alpha = 40
+            lenAlpha = 360 - 2*alpha
+
+            count = weights.length
+            delta = lenAlpha / (count + 1)
+
+            connections = []
+            weights.forEach(function(w,i){
+                connections.push(
+                    connection(radius, 2.0, alpha + delta*(i+1))
+                )  
+            })
+
+            return connections
+        }
+
         function cell(radius,s,percent) {
-            // TODO: List of connections
+        
+            connections = makeCons([2.0,1.5,0.8])
+
             return style(s,
-                group([
-                    connection(radius, 2.0, 360-120),
-                    connection(radius, 1.5, 190),
-                    connection(radius, 0.8, 120),                
+                group(connections.concat([
                     axon(radius,percent),
                     background(radius),
                     drendride(radius, percent),
                     soma(radius, percent)
-                ])
+                    ])
+                )
             )
         }
 
@@ -518,7 +535,7 @@
             ])()
                        
             // Next loop
-            // window.requestAnimationFrame(draw)
+            window.requestAnimationFrame(draw)
         }
     </script>
 </head>
