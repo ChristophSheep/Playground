@@ -39,6 +39,12 @@
             return val
         }
 
+        function polar(radius,alpha) {
+            x = radius*Math.cos(deg2rad(alpha))
+            y = radius*Math.sin(deg2rad(alpha))
+            return {x:x,y:y}
+        }
+
         //
         // SHAPES
         //
@@ -66,11 +72,28 @@
             }
         }
 
-        function bezier(cp1x,cp1y,cp2x,cp2y,x,y) {
+        function bezCurve(p1,cp1,cp2,p2) {
             return function() {
                 paper.beginPath()
-                paper.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x,y)
+                paper.moveTo(p1.x,p1.y)
+                paper.bezierCurveTo(cp1.x,cp1.y,cp2.x,cp2.y,p2.x,p2.y)
                 paper.stroke()
+            }
+        }
+
+        function quadCurve(p1,cp,p2) {
+            return function() {
+                paper.beginPath()
+                paper.moveTo(p1.x,p1.y)
+                paper.quadraticCurveTo(cp.x,cp.y,p2.x,p2.y)
+                paper.stroke()
+            }
+        }
+
+        function text(str) {
+            return function() {
+                paper.fillText(str, 0, 0)
+                paper.strokeText(str, 0, 0)
             }
         }
 
@@ -90,8 +113,8 @@
         function transform(t, fn) {
             return function() {
                 paper.save()
-                    paper.translate(t.x, t.y)
-                    paper.scale(t.sx, t.sy)
+                    paper.translate(t.x,  t.y )
+                    paper.scale    (t.sx, t.sy)
                     fn()
                 paper.restore()
             }
@@ -99,10 +122,13 @@
 
         function style(s, fn) {
             return function() {
-                paper.save();
-                    paper.fillStyle   = s.fill;
-                    paper.strokeStyle = s.stroke;
-                    paper.lineWidth   = s.strokeWidth;
+                paper.save()
+                    paper.font         = s.font
+                    paper.textAlign    = s.textAlign
+                    paper.textBaseline = s.testBaseline
+                    paper.fillStyle    = s.fillColor
+                    paper.strokeStyle  = s.strokeColor
+                    paper.lineWidth    = s.strokeColorWidth
                     fn()
                 paper.restore()
             }
@@ -130,16 +156,16 @@
             return group([
                 // percentage
                 style(
-                    {strokeWidth:width},
+                    {strokeColorWidth:width},
                     arc(radius-width/2, alphaStart, alphaEnd)
                 ),
                 // borders
                 style(
-                    {strokeWidth:width},
+                    {strokeColorWidth:width},
                     arc(radius-width/2, alpha, alpha+1)
                 ),
                 style(
-                    {strokeWidth:width},
+                    {strokeColorWidth:width},
                     arc(radius-width/2, alphaEnd-1, alphaEnd)
                 ),
                 arc(radius-width, alpha, alphaEnd)
@@ -147,29 +173,50 @@
         }
 
         function soma(radius, percent) {
+            fontSize = radius * 0.5
             radius = 3 + radius*0.5 * percent/100
-            return style(
-                {fill:"blue", strokeWidth:2},
+            str = percent+''
+
+            txt = style({
+                    fillColor:'white',
+                    strokeColor:'white',
+                    textAlign:'center',
+                    font: fontSize+'px sans serif',
+                },
+                text(str)
+            )
+
+            kernel = style(
+                {fillColor:"blue", strokeColorWidth:2},
                 circle(radius)
             )
+
+            return group([
+                kernel,
+                transform({x:0,y:fontSize/4},
+                    txt
+                )
+            ])
         }
 
-        function getColor(percent) {
-            if (percent < 95) {
-                fillColor = "lightblue"
-            } else {
-                fillColor = "blue"
-            }
-            return fillColor
-        }
-
+   
         function axon(radius, percent) {
+
+            function getColor(percent) {
+                if (percent < 95) {
+                    fillColorColor = "lightblue"
+                } else {
+                    fillColorColor = "blue"
+                }
+                return fillColorColor
+            }
+
             length = 120
-            fillColor = getColor(percent)
+            fillColorColor = getColor(percent)
             return transform(
                 {x:radius,y:0},
                 style(
-                    {fill:fillColor},
+                    {fillColor:fillColorColor},
                     group([
                         transform(
                             {x:length/2,y:0},
@@ -181,16 +228,56 @@
             )
         }
 
+        function getWeightedRadius(radius, weight) {
+            return radius*weight
+        }
+
+        function synapse(radius, weight, alpha) {
+            fact = 0.05
+            pos = polar(radius,alpha)
+            radius = radius*fact
+            return transform(
+                pos,
+                style(
+                    {fillColor:"blue"},
+                    circle(getWeightedRadius(radius,weight))
+                )
+            )
+        }
+
+        function point(pt) {
+            return transform(
+                pt,
+                style(
+                    {fillColor:"blue"},
+                    circle(radius*0.05)
+                )
+            )
+        }
+
+        function connection(radius, weight, alpha) {
+            p2 = polar(radius,alpha)
+            cp = polar(radius*1.5,alpha)
+            p1 = polar(radius*1.5,alpha)
+            p1.x = - 150
+            return group([
+                quadCurve(p1,cp,p2),
+                //point(cp),
+                synapse(radius,weight,alpha),
+            ])
+        }
+
         function cell(radius,s,percent) {
-            alpha = 40
+            // TODO: List of connections
             return style(s,
                 group([
+                    connection(radius, 2.0, 360-120),
+                    connection(radius, 1.5, 190),
+                    connection(radius, 0.8, 120),                
                     axon(radius,percent),
                     background(radius),
                     drendride(radius, percent),
-                    soma(radius, percent),
-                    bezier(-200,-100,-75,-100,0,0),
-                    bezier(-200,+100,-75,+100,0,0),
+                    soma(radius, percent)
                 ])
             )
         }
@@ -204,9 +291,9 @@
             paper.clearRect(0,0,size.width,size.height);
          
             var s = {
-                fill  : "lightgrey",
-                stroke: "blue", // default
-                strokeWidth: 1,
+                fillColor  : "lightgrey",
+                strokeColor: "blue", // default
+                strokeColorWidth: 1,
             }
 
             var t = {
@@ -223,16 +310,16 @@
             time = new Date()
             radius = 70
             alpha = 50
-            percent = time.getMilliseconds()/10
+            percent = Math.round(time.getMilliseconds()/10)
 
             var drawCell = transform(
                 {x:size.width/2,y:size.height/2},
-                cell(radius,s, percent)
+                cell(radius,s,percent)
             )
             drawCell()
 
             // Next loop
-            //window.requestAnimationFrame(draw)
+            window.requestAnimationFrame(draw)
         }
     </script>
 </head>
