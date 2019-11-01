@@ -8,6 +8,12 @@
         function init() {
             paper = getPaper()
             size  = getSize() 
+
+            // Default
+            paper.pointSize = 1.0
+
+            paper.DEBUG = true
+
             // Start animation
             window.requestAnimationFrame(draw)
         }
@@ -48,6 +54,17 @@
         //
         // SHAPES
         //
+
+        function point(pt) {
+            return function() {
+                //console.debug("pointSize:"+paper.pointSize)
+                paper.beginPath()
+                paper.arc(pt.x, pt.y, paper.pointSize, 0, Math.PI *2, true)
+                paper.fill()
+                paper.stroke()
+            }
+        }
+
         function circle(r) {
             return function() {
                 paper.beginPath()
@@ -72,22 +89,96 @@
             }
         }
 
-        function bezCurve(p1,cp1,cp2,p2) {
+        function line(p1,p2) {
             return function() {
                 paper.beginPath()
                 paper.moveTo(p1.x,p1.y)
-                paper.bezierCurveTo(cp1.x,cp1.y,cp2.x,cp2.y,p2.x,p2.y)
+                paper.lineTo(p2.x,p2.y)
                 paper.stroke()
             }
         }
 
-        function quadCurve(p1,cp,p2) {
+        function polyline(pts) {
             return function() {
+                paper.beginPath()
+                pts.forEach(function(pt,i){
+                    if (i === 0) {
+                        paper.moveTo(pt.x,pt.y)
+                    } else {
+                        paper.lineTo(pt.x,pt.y)
+                    }
+                })
+                paper.stroke()
+            }
+        }
+
+        function bezCurve(p1,cp1,cp2,p2) {
+
+            curve = [
+                function() {
+                    paper.beginPath()
+                    paper.moveTo(p1.x,p1.y)
+                    paper.bezierCurveTo(cp1.x,cp1.y,cp2.x,cp2.y,p2.x,p2.y)
+                    paper.stroke()
+                }, 
+            ]
+
+            if (paper.DEBUG) {
+
+                st = {strokeColor:'lightgrey'}
+                sp = {strokeColor:'blue', fillColor: 'blue', pointSize: 1.2}
+
+                tangents = [
+                    style( 
+                        st,
+                        line(p1,cp1),
+                    ),
+                    style(
+                        st,
+                        line(cp2,p2),
+                    ),
+                    style(sp,
+                        point(cp1)
+                    ),
+                    style(sp,
+                        point(cp2)
+                    ),
+                ]
+
+                curve = tangents.concat(curve)
+            }
+
+            return group(curve)
+        }
+
+        function quadCurve(p1,cp,p2) {
+            curve = [function() {
                 paper.beginPath()
                 paper.moveTo(p1.x,p1.y)
                 paper.quadraticCurveTo(cp.x,cp.y,p2.x,p2.y)
                 paper.stroke()
+            }]
+
+            if (paper.DEBUG) {
+
+                st = {strokeColor:'lightgrey'}
+                sp = {strokeColor:'blue', fillColor: 'blue', pointSize: 1.2}
+
+                tangents = [
+                    style(st,
+                        line(p1,cp),
+                    ),
+                    style(st,
+                        line(cp,p2),
+                    ),
+                    style(sp,
+                        point(cp)
+                    ),
+                ]
+                curve = tangents.concat(curve)  
             }
+
+            return group(curve)
         }
 
         function text(str) {
@@ -102,11 +193,9 @@
         //
         function group(fns) {
             return function() {
-                fns.forEach(
-                    function(fn) {
-                        fn()
-                    }
-                )
+                fns.forEach(function(fn) {
+                    fn()        
+                })
             }
         }
 
@@ -122,24 +211,33 @@
 
         function style(s, fn) {
             return function() {
+                savedPointSize = paper.pointSize
                 paper.save()
                     paper.font         = s.font
                     paper.textAlign    = s.textAlign
                     paper.textBaseline = s.testBaseline
                     paper.fillStyle    = s.fillColor
                     paper.strokeStyle  = s.strokeColor
-                    paper.lineWidth    = s.strokeColorWidth
+                    paper.lineWidth    = s.lineWidth
+                    paper.pointSize    = s.pointSize
                     fn()
                 paper.restore()
+                paper.pointSize = savedPointSize
             }
         }
 
+        //
         // Cell components
+        //
+
+        // Cell background
         //
         function background(radius) {
             return circle(radius)
         }
 
+        // Dendride (area)
+        //
         function drendride(radius, percent) {
 
             percent = clamp(0,100,percent)
@@ -156,22 +254,24 @@
             return group([
                 // percentage
                 style(
-                    {strokeColorWidth:width},
+                    {lineWidth:width},
                     arc(radius-width/2, alphaStart, alphaEnd)
                 ),
                 // borders
                 style(
-                    {strokeColorWidth:width},
+                    {lineWidth:width},
                     arc(radius-width/2, alpha, alpha+1)
                 ),
                 style(
-                    {strokeColorWidth:width},
+                    {lineWidth:width},
                     arc(radius-width/2, alphaEnd-1, alphaEnd)
                 ),
                 arc(radius-width, alpha, alphaEnd)
             ])     
         }
 
+        // Cell body / soma
+        //
         function soma(radius, percent) {
             fontSize = radius * 0.5
             radius = 3 + radius*0.5 * percent/100
@@ -181,13 +281,13 @@
                     fillColor:'white',
                     strokeColor:'white',
                     textAlign:'center',
-                    font: fontSize+'px sans serif',
+                    font: fontSize+'px Arial',
                 },
                 text(str)
             )
 
             kernel = style(
-                {fillColor:"blue", strokeColorWidth:2},
+                {fillColor:"blue", lineWidth:2},
                 circle(radius)
             )
 
@@ -199,7 +299,8 @@
             ])
         }
 
-   
+        // Axon
+        //
         function axon(radius, percent) {
 
             function getColor(percent) {
@@ -228,11 +329,14 @@
             )
         }
 
-        function getWeightedRadius(radius, weight) {
-            return radius*weight
-        }
-
+     
+        // Synapse
+        //
         function synapse(radius, weight, alpha) {
+            function getWeightedRadius(radius, weight) {
+                return radius*weight
+            }
+
             fact = 0.05
             pos = polar(radius,alpha)
             radius = radius*fact
@@ -245,12 +349,13 @@
             )
         }
 
-        function point(pt) {
+        // TODO: use point and style
+        function point2(pt) {
             return transform(
                 pt,
                 style(
                     {fillColor:"blue"},
-                    circle(radius*0.05)
+                    circle(radius*0.03)
                 )
             )
         }
@@ -262,7 +367,7 @@
             p1.x = - 150
             return group([
                 quadCurve(p1,cp,p2),
-                //point(cp),
+                //point2(cp),
                 synapse(radius,weight,alpha),
             ])
         }
@@ -282,18 +387,98 @@
             )
         }
 
+        // Diagram (action potential)
         //
-        // DRAW
+        function diagram() {
+
+            function curve() {
+                
+                // 0 - 50
+                p1  = {x: 0, y: 0}
+                cp1 = {x:10, y: 0}
+                cp2 = {x:50, y: 0}
+                p2  = {x:50, y:15}
+
+                // 50 - 60 = 10
+                p3 = p2
+                cp3 = {x:50, y: 0}
+                cp4 = {x:55, y:100}
+                p4  = {x:60, y:100}
+            
+                // 70 - 80 = 10
+                p5 = p4
+                cp5 = {x:65, y:100}
+                cp6 = {x:75, y:-15}
+                p6  = {x:80, y:-15}
+
+                // 80 - 150 = 50
+                p7 = p6
+                cp7 = {x:100, y:-20}
+                cp8 = {x:100, y:  0}
+                p8  = {x:130, y:  0}
+
+                return group([
+                    bezCurve(p1, cp1, cp2, p2),
+                    bezCurve(p3, cp3, cp4, p4),
+                    bezCurve(p5, cp5, cp6, p6),
+                    bezCurve(p7, cp7, cp8, p8),   
+                ])
+            }
+
+            function threshold() {
+                p1 = {x:0,  y:15}
+                p2 = {x:150,y:15}
+                return line(p1,p2)
+            }
+
+            function axis() {
+                xsize = 150
+                ysize = 120
+                
+                p0 = {x:0,    y:    0}
+                py = {x:0,    y:ysize}
+                px = {x:xsize,y:    0}
+                
+                return polyline([py,p0,px])
+            }
+
+            return group([
+                style(
+                    {strokeColor:'grey', lineWidth:1},
+                    axis()
+                ),
+                style(
+                    {strokeColor:'blue'},
+                    curve()
+                ),
+                style(
+                    {strokeColor:'green'},
+                    threshold()
+                )
+            ])
+        }
+
+        // Clear scene
+        //
+        function clear() {
+            //paper.fillStyle = 'rgba(255,255,255,0.3)'
+            //paper.fillRect(0,0,size.width,size.height);
+        
+            paper.clearRect(0,0,size.width,size.height); 
+        }
+        // Draw scene
         //
         function draw() {
 
-            //paper.globalCompositeOperation = 'destination-over';
-            paper.clearRect(0,0,size.width,size.height);
-         
+            // TODO: check
+            // paper.globalCompositeOperation = 'destination-over';
+            
+            clear()
+
             var s = {
                 fillColor  : "lightgrey",
                 strokeColor: "blue", // default
-                strokeColorWidth: 1,
+                lineWidth: 1,
             }
 
             var t = {
@@ -307,19 +492,33 @@
             // styleNode     (wrap)
             // shapeNode     (circle, rect, arc)
 
-            time = new Date()
             radius = 70
-            alpha = 50
-            percent = Math.round(time.getMilliseconds()/10)
+            now = new Date()
+            percent = Math.trunc(now.getMilliseconds()/10)
 
-            var drawCell = transform(
-                {x:size.width/2,y:size.height/2},
+            var c = transform({
+                     x:size.width /2
+                    ,y:size.height/2
+                },
                 cell(radius,s,percent)
             )
-            drawCell()
 
+            var d = transform({
+                     x: 320,
+                     y: 470,
+                    sx:   1,
+                    sy:  -1, // (0,0) lower left
+                },
+                diagram(s)
+            )
+            
+            group([
+                c,
+                d
+            ])()
+                       
             // Next loop
-            window.requestAnimationFrame(draw)
+            // window.requestAnimationFrame(draw)
         }
     </script>
 </head>
