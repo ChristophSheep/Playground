@@ -11,7 +11,7 @@
 
             // Default
             paper.pointSize = 1.0
-            paper.DEBUG = false
+            paper.DEBUG = true
 
             // Start animation
             window.requestAnimationFrame(draw)
@@ -59,13 +59,50 @@
                 .map(idx)
         }
 
+         // Bezier 3. Grades - start,end point and 2 control points
+        //
+        // 0 <= t <= 1
+        //
+        function bezier3(t,p0,p1,p2,p3) {
+
+            if (0.0 <= t && t <= 1.0) {
+
+                /*
+                
+                Bernstein polynoms
+                ------------------
+
+                B03 =       (1-t)*(1-t)*(1-t)
+                B13 = 3  *t*(1-t)*(1-t)
+                B23 = 3*t*t*(1-t)
+                B33 = t*t*t
+
+                */
+
+                t1  = (1-t)
+                t2  = t1*t1
+                t3  = t2*t1
+                tt3 = 3*t
+                B03 =       (t3)
+                B13 = tt3  *(t2)
+                B23 = tt3*t*(t1)
+                B33 = t*t*t
+
+                xt = p0.x*B03 + p1.x*B13 + p2.x*B23 + p3.x*B33
+                yt = p0.y*B03 + p1.y*B13 + p2.y*B23 + p3.y*B33
+
+                return {x:xt, y:yt}   
+            }
+
+            return undefined
+        }
+
         //
         // SHAPES
         //
 
         function point(pt) {
             return function() {
-                //console.debug("pointSize:"+paper.pointSize)
                 paper.beginPath()
                 paper.arc(pt.x, pt.y, paper.pointSize, 0, Math.PI *2, true)
                 paper.fill()
@@ -133,8 +170,8 @@
 
             if (paper.DEBUG) {
 
-                st = {strokeColor:'lightgrey'}
-                sp = {strokeColor:'blue', fillColor: 'blue', pointSize: 1.2}
+                st = {strokeColor:'grey', lineWidth:1}
+                sp = {strokeColor:'blue', lineWidth:1, fillColor: 'blue', pointSize: 1.2}
 
                 tangents = [
                     style( 
@@ -458,37 +495,7 @@
             )
         }
 
-        // Bezier 3. Grades - start,end point and 2 control points
-        //
-        // 0 <= t <= 1
-        //
-        function bezier3(t,p0,p1,p2,p3) {
-
-            if (0.0 <= t && t <= 1.0) {
-
-                /*
-                B03 =       (1-t)*(1-t)*(1-t)
-                B13 = 3  *t*(1-t)*(1-t)
-                B23 = 3*t*t*(1-t)
-                B33 = t*t*t
-                */
-
-                t1  = (1-t)
-                t2  = t1*t1
-                t3  = t2*t1
-                tt3 = 3*t
-                B03 =       (t3)
-                B13 = tt3  *(t2)
-                B23 = tt3*t*(t1)
-                B33 = t*t*t
-
-                xt = p0.x*B03 + p1.x*B13 + p2.x*B23 + p3.x*B33
-                yt = p0.y*B03 + p1.y*B13 + p2.y*B23 + p3.y*B33
-            
-                return {x:xt, y:yt}   
-            }
-            return undefined
-        }
+       
 
         // Diagram (action potential)
         //
@@ -544,6 +551,7 @@
                 cp8 = {x:t5-tt*4, y:+rest}
                 p8  = {x:t5,      y:+rest}
 
+                // canvas bezier curve
                 a = group([
                     bezCurve(p1, cp1, cp2, p2),
                     bezCurve(p3, cp3, cp4, p4),
@@ -551,6 +559,7 @@
                     bezCurve(p7, cp7, cp8, p8),   
                 ])
 
+                // self calced bezier
                 b = group([
                     bezCurveN(p1, cp1, cp2, p2),
                     bezCurveN(p3, cp3, cp4, p4),
@@ -590,7 +599,7 @@
                 ),
 
                 style({
-                        strokeColor:'lightgrey',
+                        strokeColor:'rgba(170,170,170,0.4)',
                         //lineDash:[7,2],
                         lineWidth:5,
                 
