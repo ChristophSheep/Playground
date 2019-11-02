@@ -11,8 +11,7 @@
 
             // Default
             paper.pointSize = 1.0
-
-            paper.DEBUG = true
+            paper.DEBUG = false
 
             // Start animation
             window.requestAnimationFrame(draw)
@@ -49,6 +48,15 @@
             x = radius*Math.cos(deg2rad(alpha))
             y = radius*Math.sin(deg2rad(alpha))
             return {x:x,y:y}
+        }
+
+        function range(n) {
+            function idx (_,i) {
+                return i
+            }
+            return Array
+                .apply(null, Array(n))
+                .map(idx)
         }
 
         //
@@ -211,18 +219,41 @@
 
         function style(s, fn) {
             return function() {
-                savedPointSize = paper.pointSize
+                
+                if (s.pointSize !== undefined) {
+                    savedPointSize = paper.pointSize
+                }
+
                 paper.save()
+
                     paper.font         = s.font
                     paper.textAlign    = s.textAlign
-                    paper.textBaseline = s.testBaseline
+                    paper.textBaseline = s.textBaseline
+
                     paper.fillStyle    = s.fillColor
                     paper.strokeStyle  = s.strokeColor
+                    
                     paper.lineWidth    = s.lineWidth
-                    paper.pointSize    = s.pointSize
+
+                    if (s.pointSize !== undefined) {
+                        paper.pointSize  = s.pointSize
+                    }
+
+                    if (s.lineDash !== undefined) {
+                        paper.setLineDash(s.lineDash)
+                    }
+
+                    if (s.lineDashOffset !== undefined) {
+                        paper.lineDashOffset = s.lineDashOffset
+                    }
+                    
                     fn()
+
                 paper.restore()
-                paper.pointSize = savedPointSize
+
+                if (s.pointSize !== undefined) {
+                    paper.pointSize = savedPointSize
+                }
             }
         }
 
@@ -273,29 +304,48 @@
         // Cell body / soma
         //
         function soma(radius, percent) {
-            fontSize = radius * 0.5
-            radius = 3 + radius*0.5 * percent/100
+            fontSize = radius * 0.4
+            kradius = 3 + radius*0.5 * percent/100
             str = percent+''
 
-            txt = style({
-                    fillColor:'white',
-                    strokeColor:'white',
-                    textAlign:'center',
-                    font: fontSize+'px Arial',
+            txtStyle = {
+                fillColor    : 'white' ,
+                strokeColor  : 'white' ,
+                textAlign    : 'center',
+                textBaseline : 'middle',
+                font         : fontSize+'px Arial',
+            }
+
+            stext = transform({
+                    x:radius/2,
+                    y:0
                 },
-                text(str)
+                style(
+                    txtStyle,
+                    text(str)
+                )
             )
 
-            kernel = style(
-                {fillColor:"blue", lineWidth:2},
-                circle(radius)
+            kernel = style({
+                    fillColor:"rgba(0,0,255,0.5)", 
+                    lineWidth:2
+                },
+                circle(kradius)
+            )
+
+            threshold = style({
+                strokeColor:"red",
+                fillColor:"rgba(0,0,0,0)",
+                lineDash:[7,1,1,1],
+                lineDashOffset: 2,
+                },
+                circle(10)
             )
 
             return group([
+                threshold,
                 kernel,
-                transform({x:0,y:fontSize/4},
-                    txt
-                )
+                stext,
             ])
         }
 
@@ -333,8 +383,18 @@
         // Synapse
         //
         function synapse(radius, weight, alpha) {
-            function getWeightedRadius(radius, weight) {
+            function getRadius(radius, weight) {
+                if (weight < 0) {
+                    weight = weight * -1.0
+                }
                 return radius*weight
+            }
+
+            function getColor(weight) {
+                if (weight < 0) {
+                    return "lightwhite"
+                }
+                return "blue"
             }
 
             fact = 0.05
@@ -343,19 +403,8 @@
             return transform(
                 pos,
                 style(
-                    {fillColor:"blue"},
-                    circle(getWeightedRadius(radius,weight))
-                )
-            )
-        }
-
-        // TODO: use point and style
-        function point2(pt) {
-            return transform(
-                pt,
-                style(
-                    {fillColor:"blue"},
-                    circle(radius*0.03)
+                    {fillColor:getColor(weight)},
+                    circle(getRadius(radius, weight))
                 )
             )
         }
@@ -382,7 +431,7 @@
             connections = []
             weights.forEach(function(w,i){
                 connections.push(
-                    connection(radius, 2.0, alpha + delta*(i+1))
+                    connection(radius, w, alpha + delta*(i+1))
                 )  
             })
 
@@ -390,8 +439,13 @@
         }
 
         function cell(radius,s,percent) {
-        
-            connections = makeCons([2.0,1.5,0.8])
+            
+            weights = [1,2,3,4,5,6,7,8,9,10]
+            weights.forEach(function(w,i){
+                weights[i] = Math.random() * 4.0 - 2.0
+                console.debug(weights[i])
+            })
+            connections = makeCons(weights)
 
             return style(s,
                 group(connections.concat([
@@ -404,53 +458,118 @@
             )
         }
 
+        // Bezier 3. Grades - start,end point and 2 control points
+        //
+        // 0 <= t <= 1
+        //
+        function bezier3(t,p0,p1,p2,p3) {
+
+            if (0.0 <= t && t <= 1.0) {
+
+                /*
+                B03 =       (1-t)*(1-t)*(1-t)
+                B13 = 3  *t*(1-t)*(1-t)
+                B23 = 3*t*t*(1-t)
+                B33 = t*t*t
+                */
+
+                t1  = (1-t)
+                t2  = t1*t1
+                t3  = t2*t1
+                tt3 = 3*t
+                B03 =       (t3)
+                B13 = tt3  *(t2)
+                B23 = tt3*t*(t1)
+                B33 = t*t*t
+
+                xt = p0.x*B03 + p1.x*B13 + p2.x*B23 + p3.x*B33
+                yt = p0.y*B03 + p1.y*B13 + p2.y*B23 + p3.y*B33
+            
+                return {x:xt, y:yt}   
+            }
+            return undefined
+        }
+
         // Diagram (action potential)
         //
         function diagram() {
 
+            function bezCurveN(p1, cp1, cp2, p2) {
+                N = 5
+                ns = range(N+1)
+                ts = ns.map(function(n){return n/N})
+
+                pts = ts.map(function(t){
+                    return bezier3(t, p1, cp1, cp2, p2)
+                })
+
+                return polyline(pts)
+            }
+
             function curve() {
+
+                rest = 0    // rest level
+                thre = 15   // threshold level
+                max  = 100
                 
-                // 0 - 50
-                p1  = {x: 0, y: 0}
-                cp1 = {x:10, y: 0}
-                cp2 = {x:50, y: 0}
-                p2  = {x:50, y:15}
+                t1 = 0      // at rest
+                t2 = 50     // reach threshold
+                t3 = 60     // reach max
+                t4 = 70     // go min
+                t5 = 100    // go back rest
 
-                // 50 - 60 = 10
+                tt = 5      // tangent offset
+
+                // up to threshold
+                p1  = {x:t1,      y: rest}
+                cp1 = {x:t1+t2/2, y: rest}
+                cp2 = {x:t2,      y: rest}
+                p2  = {x:t2,      y: thre}
+
+                // up - ++ rush in
                 p3 = p2
-                cp3 = {x:50, y: 0}
-                cp4 = {x:55, y:100}
-                p4  = {x:60, y:100}
+                cp3 = {x:t2,    y:  0}
+                cp4 = {x:t2+tt, y:max}
+                p4  = {x:t3,    y:max}
             
-                // 70 - 80 = 10
+                // down - ++ rush out
                 p5 = p4
-                cp5 = {x:65, y:100}
-                cp6 = {x:75, y:-15}
-                p6  = {x:80, y:-15}
+                cp5 = {x:t3+tt, y:+max }
+                cp6 = {x:t4-tt, y:-thre}
+                p6  = {x:t4,    y:-thre}
 
-                // 80 - 150 = 50
+                // back to rest level
                 p7 = p6
-                cp7 = {x:100, y:-20}
-                cp8 = {x:100, y:  0}
-                p8  = {x:130, y:  0}
+                cp7 = {x:t4+tt*1, y:-thre}
+                cp8 = {x:t5-tt*4, y:+rest}
+                p8  = {x:t5,      y:+rest}
 
-                return group([
+                a = group([
                     bezCurve(p1, cp1, cp2, p2),
                     bezCurve(p3, cp3, cp4, p4),
                     bezCurve(p5, cp5, cp6, p6),
                     bezCurve(p7, cp7, cp8, p8),   
                 ])
+
+                b = group([
+                    bezCurveN(p1, cp1, cp2, p2),
+                    bezCurveN(p3, cp3, cp4, p4),
+                    bezCurveN(p5, cp5, cp6, p6),
+                    bezCurveN(p7, cp7, cp8, p8),   
+                ])
+
+                return {a:a, b:b}
             }
 
             function threshold() {
                 p1 = {x:0,  y:15}
-                p2 = {x:150,y:15}
+                p2 = {x:120,y:15}
                 return line(p1,p2)
             }
 
             function axis() {
-                xsize = 150
-                ysize = 120
+                xsize = 120
+                ysize = 100
                 
                 p0 = {x:0,    y:    0}
                 py = {x:0,    y:ysize}
@@ -459,17 +578,37 @@
                 return polyline([py,p0,px])
             }
 
+            curveAB = curve()
+
             return group([
-                style(
-                    {strokeColor:'grey', lineWidth:1},
+                
+                style({
+                        strokeColor:'grey', 
+                        lineWidth:1
+                    },
                     axis()
                 ),
-                style(
-                    {strokeColor:'blue'},
-                    curve()
+
+                style({
+                        strokeColor:'lightgrey',
+                        //lineDash:[7,2],
+                        lineWidth:5,
+                
+                    },
+                    curveAB.a
                 ),
-                style(
-                    {strokeColor:'green'},
+
+                style({
+                        strokeColor:'blue',
+                        lineDash:[3,2],
+                    },
+                    curveAB.b
+                ),
+
+                style({
+                        strokeColor:'green',
+                        lineDash:[13,2,1,2],
+                    },
                     threshold()
                 )
             ])
@@ -483,6 +622,7 @@
         
             paper.clearRect(0,0,size.width,size.height); 
         }
+
         // Draw scene
         //
         function draw() {
@@ -498,13 +638,6 @@
                 lineWidth: 1,
             }
 
-            var t = {
-                x : 70,
-                y : 70,
-                sx: 1.0,
-                sy: 1.0,
-            }
-
             // transformNode (warp)
             // styleNode     (wrap)
             // shapeNode     (circle, rect, arc)
@@ -513,19 +646,40 @@
             now = new Date()
             percent = Math.trunc(now.getMilliseconds()/10)
 
-            var c = transform({
-                     x:size.width /2
-                    ,y:size.height/2
-                },
+            tc = {
+                x: size.width/2,
+                y: size.height/2            
+            }
+          
+            if (paper.DEBUG) {
+                tc = {
+                    x:180,
+                    y:130
+                }
+            }
+
+            var c = transform(
+                tc,
                 cell(radius,s,percent)
             )
 
-            var d = transform({
-                     x: 320,
-                     y: 470,
-                    sx:   1,
-                    sy:  -1, // (0,0) lower left
-                },
+            dt = {
+                x: 360,
+                y: 120,
+                sx:   1,
+                sy:  -1, // (0,0) lower left
+            }
+
+            if (paper.DEBUG) {
+                dt = {
+                     x: 230,
+                     y: 460,
+                    sx:   2,
+                    sy:  -2, // (0,0) lower left
+                }
+            }
+
+            var d = transform(dt,
                 diagram(s)
             )
             
@@ -535,8 +689,8 @@
             ])()
                        
             // Next loop
-            window.requestAnimationFrame(draw)
-        }
+            // window.requestAnimationFrame(draw)
+        } 
     </script>
 </head>
 <body onload="init();draw();">
