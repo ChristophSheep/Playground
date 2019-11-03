@@ -5,16 +5,30 @@
         var paper;
         var size;
 
+        actionPotHashmap = {}
+
         function init() {
             paper = getPaper()
             size  = getSize() 
 
-            // Default
+            // Defaults
+            //
             paper.pointSize = 1.0
             paper.DEBUG = true
 
+
+            // Action Potential
+            //
+            pts = actionPotApproxPts(5)
+            xs = range(101) // 0,1,...,100
+            ys = interpYs(xs, pts)
+            xs.forEach(function(x,i){
+                actionPotHashmap[x] = ys[i]
+            })
+
             // Start animation
             window.requestAnimationFrame(draw)
+
         }
 
         function getPaper() {
@@ -63,7 +77,7 @@
         //
         // 0 <= t <= 1
         //
-        function bezier3(t,p0,p1,p2,p3) {
+        function bezierPtAt(t,p0,p1,p2,p3) {
 
             if (0.0 <= t && t <= 1.0) {
 
@@ -100,7 +114,7 @@
 
         function interpY(x, p1, p2) {
             if (p1.x <= x && x <= p2.x) {
-                y = x * (p2.x - p1.x) / (p2.y - p1.y)
+                y = x * ((p2.y - p1.y) / (p2.x - p1.x))
                 return y
             }
             return undefined
@@ -132,13 +146,13 @@
 
         function interpYs(xs, pts) {
             
-        lastI = 0
+            lastI = 0
             
             function calcY(x){
                 i = findIndex(x, pts)
                 y = interpY(x, pts[i], pts[i+1])
                 lastI = i
-                return i
+                return y
             }
 
             return xs.map(calcY)
@@ -389,8 +403,19 @@
         //
         function soma(radius, percent) {
             fontSize = radius * 0.4
-            kradius = 3 + radius*0.5 * percent/100
+            //kradius = 3 + radius*0.5 * percent/100
             str = percent+''
+
+            ac = actionPotHashmap[percent]
+            if (ac == undefined) {
+                kradius = 0
+            } else {
+                kradius = radius * 0.1 * ac/100
+            }
+
+            if (kradius < 0) {
+                kradius = 0
+            }
 
             txtStyle = {
                 fillColor    : 'white' ,
@@ -527,7 +552,6 @@
             weights = [1,2,3,4,5,6,7,8,9,10]
             weights.forEach(function(w,i){
                 weights[i] = Math.random() * 4.0 - 2.0
-                console.debug(weights[i])
             })
             connections = makeCons(weights)
 
@@ -546,6 +570,86 @@
 
         // Diagram (action potential)
         //
+
+        function curveDef() {
+
+            rest = 0    // rest level
+            thre = 15   // threshold level
+            max  = 100
+
+            t1 = 0      // at rest
+            t2 = 50     // reach threshold
+            t3 = 60     // reach max
+            t4 = 70     // go min
+            t5 = 100    // go back rest
+
+            tt = 5      // tangent offset
+
+            // up to threshold
+            p1  = {x:t1,      y: rest}
+            cp1 = {x:t1+t2/2, y: rest}
+            cp2 = {x:t2,      y: rest}
+            p2  = {x:t2,      y: thre}
+
+            // up - ++ rush in
+            p3  = p2
+            cp3 = {x:t2,    y:  0}
+            cp4 = {x:t2+tt, y:max}
+            p4  = {x:t3,    y:max}
+
+            // down - ++ rush out
+            p5  = p4
+            cp5 = {x:t3+tt, y:+max }
+            cp6 = {x:t4-tt, y:-thre}
+            p6  = {x:t4,    y:-thre}
+
+            // back to rest level
+            p7  = p6
+            cp7 = {x:t4+tt*1, y:-thre}
+            cp8 = {x:t5-tt*4, y:+rest}
+            p8  = {x:t5,      y:+rest}
+
+            return [
+                [p1, cp1, cp2, p2],
+                [p3, cp3, cp4, p4],
+                [p5, cp5, cp6, p6],
+                [p7, cp7, cp8, p8],  
+            ] 
+        }
+
+        function bezCurveApprox(N, p1, cp1, cp2, p2) {
+            
+            ns = range(N+1) // 0 1 2 3 4 5,  N = 5
+
+            // ts für N = 5
+            // 0.0, 0.2, 0.4, 0.6, 0.8, 1.0
+
+            ts = ns.map(function(n){
+                return n/N
+            })
+
+            pts = ts.map(function(t){
+                return bezierPtAt(t, p1, cp1, cp2, p2)
+            })
+
+            return pts
+        }
+
+
+        function actionPotApproxPts(N) {
+
+            //N   = 5          // 5 Points resolution per curve
+            res = []    
+            cds = curveDef() // Def of action potential curve segments
+
+            cds.forEach(function(cp, i){
+                bs = bezCurveApprox(N,cp[0],cp[1],cp[2],cp[3])
+                res = res.concat(bs)
+            })
+
+            return res
+        }
+
         function diagram() {
 
             function bezCurveN(p1, cp1, cp2, p2) {
@@ -554,7 +658,7 @@
                 ts = ns.map(function(n){return n/N})
 
                 pts = ts.map(function(t){
-                    return bezier3(t, p1, cp1, cp2, p2)
+                    return bezierPtAt(t, p1, cp1, cp2, p2)
                 })
 
                 return polyline(pts)
@@ -666,6 +770,13 @@
                         lineDash:[13,2,1,2],
                     },
                     threshold()
+                ),
+
+                style({
+                        strokeColor:'red',
+                        //lineDash:[13,2,1,2],
+                    },
+                    polyline(actionPotApproxPts(5))
                 )
             ])
         }
@@ -745,7 +856,8 @@
             ])()
                        
             // Next loop
-            // window.requestAnimationFrame(draw)
+            window.requestAnimationFrame(draw)
+            
         } 
     </script>
 </head>
