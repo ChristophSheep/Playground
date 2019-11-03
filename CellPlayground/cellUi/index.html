@@ -97,6 +97,53 @@
             return undefined
         }
 
+
+        function interpY(x, p1, p2) {
+            if (p1.x <= x && x <= p2.x) {
+                y = x * (p2.x - p1.x) / (p2.y - p1.y)
+                return y
+            }
+            return undefined
+        }
+
+        function findIndex(x, pts) {
+            return findIndexRec(x, 0, pts)
+        }
+
+        function findIndexRec(x, i, pts) {
+            if (i < 0) {
+                return undefined
+            }
+
+            if (i >= pts.length) {
+                return undefined
+            }
+
+            p1 = pts[i]
+            p2 = pts[i+1]
+
+            if (p1.x <= x && x <= p2.x) {
+                return i
+            } else {
+                return findIndexRec(x, i+1, pts)
+            }
+        }
+        
+
+        function interpYs(xs, pts) {
+            
+        lastI = 0
+            
+            function calcY(x){
+                i = findIndex(x, pts)
+                y = interpY(x, pts[i], pts[i+1])
+                lastI = i
+                return i
+            }
+
+            return xs.map(calcY)
+        }
+
         //
         // SHAPES
         //
