@@ -14,7 +14,7 @@
             // Defaults
             //
             paper.pointSize = 1.0
-            paper.DEBUG = true
+            paper.DEBUG = false
 
 
             // Action Potential
@@ -204,7 +204,7 @@
             }
         }
 
-        function polyline(pts) {
+        function pline(pts) {
             return function() {
                 paper.beginPath()
                 pts.forEach(function(pt,i){
@@ -289,7 +289,7 @@
 
         function text(str) {
             return function() {
-                paper.fillText(str, 0, 0)
+                paper.fillText  (str, 0, 0)
                 paper.strokeText(str, 0, 0)
             }
         }
@@ -382,8 +382,10 @@
 
             return group([
                 // percentage
-                style(
-                    {lineWidth:width},
+                style({
+                        lineWidth:width, 
+                        strokeColor:'rgba(0,0,255,0.3)'
+                    },
                     arc(radius-width/2, alphaStart, alphaEnd)
                 ),
                 // borders
@@ -470,7 +472,7 @@
                 }
                 return fillColorColor
             }
-
+                 
             length = 120
             fillColorColor = getColor(percent)
             return transform(
@@ -480,9 +482,9 @@
                     group([
                         transform(
                             {x:length/2,y:0},
-                            rect(length,radius*0.1)
+                            rect(length,radius*0.05)
                         ),
-                        circle(radius*0.15),
+                        circle(radius*0.1),
                     ])
                 )
             )
@@ -661,7 +663,7 @@
                     return bezierPtAt(t, p1, cp1, cp2, p2)
                 })
 
-                return polyline(pts)
+                return pline(pts)
             }
 
             function curve() {
@@ -735,7 +737,7 @@
                 py = {x:0,    y:ysize}
                 px = {x:xsize,y:    0}
                 
-                return polyline([py,p0,px])
+                return pline([py,p0,px])
             }
 
             curveAB = curve()
@@ -776,7 +778,7 @@
                         strokeColor:'red',
                         //lineDash:[13,2,1,2],
                     },
-                    polyline(actionPotApproxPts(5))
+                    pline(actionPotApproxPts(5))
                 )
             ])
         }
@@ -856,7 +858,7 @@
             ])()
                        
             // Next loop
-            window.requestAnimationFrame(draw)
+            //window.requestAnimationFrame(draw)
             
         } 
     </script>
