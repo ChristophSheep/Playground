@@ -1,5 +1,7 @@
 <html>
 <head>
+    <script type="text/javascript" src="./celllib.js"></script>
+    <script type="text/javascript" src="./cvslib.js"></script>
     <script type="text/javascript">
 
         var paper;
@@ -7,7 +9,27 @@
 
         actionPotHashmap = {}
 
+        function getStyle2(width) {
+
+            sp = {
+                lineWidth   : width, 
+                strokeColor : 'rgba(0,0,255,0.3)'
+            }
+
+            spb = {
+                lineWidth   : width, 
+                strokeColor : 'blue'    
+            }
+
+            return {
+                percentage: sp,
+                border: spb
+            }
+        }
+
         function init() {
+
+            // Get paper and size
             paper = getPaper()
             size  = getSize() 
 
@@ -15,7 +37,6 @@
             //
             paper.pointSize = 1.0
             paper.DEBUG = false
-
 
             // Action Potential
             //
@@ -27,332 +48,7 @@
             })
 
             // Start animation
-            window.requestAnimationFrame(draw)
-
-        }
-
-        function getPaper() {
-            return document.getElementById("scene").getContext("2d")
-        }
-
-        function getSize() {
-            width  = document.getElementById("scene").width
-            height = document.getElementById("scene").height
-            return {width:width,height:height}
-        }
-
-        //
-        // HELPERS
-        //
-        function deg2rad(x) {
-            return (x/180.0) * Math.PI
-        }
-
-        function clamp(min,max,val) {
-            if (val < min) {
-                val = 0
-            }
-            if (val > max) {
-                val = 100
-            }
-            return val
-        }
-
-        function polar(radius,alpha) {
-            x = radius*Math.cos(deg2rad(alpha))
-            y = radius*Math.sin(deg2rad(alpha))
-            return {x:x,y:y}
-        }
-
-        function range(n) {
-            function idx (_,i) {
-                return i
-            }
-            return Array
-                .apply(null, Array(n))
-                .map(idx)
-        }
-
-         // Bezier 3. Grades - start,end point and 2 control points
-        //
-        // 0 <= t <= 1
-        //
-        function bezierPtAt(t,p0,p1,p2,p3) {
-
-            if (0.0 <= t && t <= 1.0) {
-
-                /*
-                
-                Bernstein polynoms
-                ------------------
-
-                B03 =       (1-t)*(1-t)*(1-t)
-                B13 = 3  *t*(1-t)*(1-t)
-                B23 = 3*t*t*(1-t)
-                B33 = t*t*t
-
-                */
-
-                t1  = (1-t)
-                t2  = t1*t1
-                t3  = t2*t1
-                tt3 = 3*t
-                B03 =       (t3)
-                B13 = tt3  *(t2)
-                B23 = tt3*t*(t1)
-                B33 = t*t*t
-
-                xt = p0.x*B03 + p1.x*B13 + p2.x*B23 + p3.x*B33
-                yt = p0.y*B03 + p1.y*B13 + p2.y*B23 + p3.y*B33
-
-                return {x:xt, y:yt}   
-            }
-
-            return undefined
-        }
-
-
-        function interpY(x, p1, p2) {
-            if (p1.x <= x && x <= p2.x) {
-                y = x * ((p2.y - p1.y) / (p2.x - p1.x))
-                return y
-            }
-            return undefined
-        }
-
-        function findIndex(x, pts) {
-            return findIndexRec(x, 0, pts)
-        }
-
-        function findIndexRec(x, i, pts) {
-            if (i < 0) {
-                return undefined
-            }
-
-            if (i >= pts.length) {
-                return undefined
-            }
-
-            p1 = pts[i]
-            p2 = pts[i+1]
-
-            if (p1.x <= x && x <= p2.x) {
-                return i
-            } else {
-                return findIndexRec(x, i+1, pts)
-            }
-        }
-        
-
-        function interpYs(xs, pts) {
-            
-            lastI = 0
-            
-            function calcY(x){
-                i = findIndex(x, pts)
-                y = interpY(x, pts[i], pts[i+1])
-                lastI = i
-                return y
-            }
-
-            return xs.map(calcY)
-        }
-
-        //
-        // SHAPES
-        //
-
-        function point(pt) {
-            return function() {
-                paper.beginPath()
-                paper.arc(pt.x, pt.y, paper.pointSize, 0, Math.PI *2, true)
-                paper.fill()
-                paper.stroke()
-            }
-        }
-
-        function circle(r) {
-            return function() {
-                paper.beginPath()
-                paper.arc(0, 0, r, 0, Math.PI *2, true)
-                paper.fill()
-                paper.stroke()
-            };
-        }
-
-        function arc(r, a, b) {
-            return function() {
-                paper.beginPath()
-                paper.arc(0, 0, r, deg2rad(a), deg2rad(b), false)
-                paper.stroke()
-            }
-        }
- 
-        function rect(w, h) {
-            return function() {
-                paper.fillRect  (-w/2, -h/2, w, h)
-                paper.strokeRect(-w/2, -h/2, w, h)
-            }
-        }
-
-        function line(p1,p2) {
-            return function() {
-                paper.beginPath()
-                paper.moveTo(p1.x,p1.y)
-                paper.lineTo(p2.x,p2.y)
-                paper.stroke()
-            }
-        }
-
-        function pline(pts) {
-            return function() {
-                paper.beginPath()
-                pts.forEach(function(pt,i){
-                    if (i === 0) {
-                        paper.moveTo(pt.x,pt.y)
-                    } else {
-                        paper.lineTo(pt.x,pt.y)
-                    }
-                })
-                paper.stroke()
-            }
-        }
-
-        function bezCurve(p1,cp1,cp2,p2) {
-
-            curve = [
-                function() {
-                    paper.beginPath()
-                    paper.moveTo(p1.x,p1.y)
-                    paper.bezierCurveTo(cp1.x,cp1.y,cp2.x,cp2.y,p2.x,p2.y)
-                    paper.stroke()
-                }, 
-            ]
-
-            if (paper.DEBUG) {
-
-                st = {strokeColor:'grey', lineWidth:1}
-                sp = {strokeColor:'blue', lineWidth:1, fillColor: 'blue', pointSize: 1.2}
-
-                tangents = [
-                    style( 
-                        st,
-                        line(p1,cp1),
-                    ),
-                    style(
-                        st,
-                        line(cp2,p2),
-                    ),
-                    style(sp,
-                        point(cp1)
-                    ),
-                    style(sp,
-                        point(cp2)
-                    ),
-                ]
-
-                curve = tangents.concat(curve)
-            }
-
-            return group(curve)
-        }
-
-        function quadCurve(p1,cp,p2) {
-            curve = [function() {
-                paper.beginPath()
-                paper.moveTo(p1.x,p1.y)
-                paper.quadraticCurveTo(cp.x,cp.y,p2.x,p2.y)
-                paper.stroke()
-            }]
-
-            if (paper.DEBUG) {
-
-                st = {strokeColor:'lightgrey'}
-                sp = {strokeColor:'blue', fillColor: 'blue', pointSize: 1.2}
-
-                tangents = [
-                    style(st,
-                        line(p1,cp),
-                    ),
-                    style(st,
-                        line(cp,p2),
-                    ),
-                    style(sp,
-                        point(cp)
-                    ),
-                ]
-                curve = tangents.concat(curve)  
-            }
-
-            return group(curve)
-        }
-
-        function text(str) {
-            return function() {
-                paper.fillText  (str, 0, 0)
-                paper.strokeText(str, 0, 0)
-            }
-        }
-
-        //
-        // MODIFIERS
-        //
-        function group(fns) {
-            return function() {
-                fns.forEach(function(fn) {
-                    fn()        
-                })
-            }
-        }
-
-        function transform(t, fn) {
-            return function() {
-                paper.save()
-                    paper.translate(t.x,  t.y )
-                    paper.scale    (t.sx, t.sy)
-                    fn()
-                paper.restore()
-            }
-        }
-
-        function style(s, fn) {
-            return function() {
-                
-                if (s.pointSize !== undefined) {
-                    savedPointSize = paper.pointSize
-                }
-
-                paper.save()
-
-                    paper.font         = s.font
-                    paper.textAlign    = s.textAlign
-                    paper.textBaseline = s.textBaseline
-
-                    paper.fillStyle    = s.fillColor
-                    paper.strokeStyle  = s.strokeColor
-                    
-                    paper.lineWidth    = s.lineWidth
-
-                    if (s.pointSize !== undefined) {
-                        paper.pointSize  = s.pointSize
-                    }
-
-                    if (s.lineDash !== undefined) {
-                        paper.setLineDash(s.lineDash)
-                    }
-
-                    if (s.lineDashOffset !== undefined) {
-                        paper.lineDashOffset = s.lineDashOffset
-                    }
-                    
-                    fn()
-
-                paper.restore()
-
-                if (s.pointSize !== undefined) {
-                    paper.pointSize = savedPointSize
-                }
-            }
+            window.requestAnimationFrame(main)
         }
 
         //
@@ -369,10 +65,10 @@
         //
         function drendride(radius, percent) {
 
-            percent = clamp(0,100,percent)
+            percent      = clamp(0,100,percent)
             
-            alpha = 40
-            width = radius*0.25
+            alpha        = 40
+            width        = radius*0.25
 
             alphaFull    = 360-alpha*2
             alphaPercent = (alphaFull*percent/100)
@@ -382,22 +78,18 @@
 
             return group([
                 // percentage
-                style({
-                        lineWidth:width, 
-                        strokeColor:'rgba(0,0,255,0.3)'
-                    },
+                style(getStyle2(width).percentage,
                     arc(radius-width/2, alphaStart, alphaEnd)
                 ),
                 // borders
                 style(
-                    {lineWidth:width},
-                    arc(radius-width/2, alpha, alpha+1)
+                    getStyle2(width).border,
+                    group([
+                         arc(radius-width/2, alpha,      alpha+1 )
+                        ,arc(radius-width/2, alphaEnd-1, alphaEnd)
+                    ])
                 ),
-                style(
-                    {lineWidth:width},
-                    arc(radius-width/2, alphaEnd-1, alphaEnd)
-                ),
-                arc(radius-width, alpha, alphaEnd)
+                ,arc(radius-width, alpha, alphaEnd)
             ])     
         }
 
@@ -524,7 +216,7 @@
             p2 = polar(radius,alpha)
             cp = polar(radius*1.5,alpha)
             p1 = polar(radius*1.5,alpha)
-            p1.x = - 150
+            p1.x = -100
             return group([
                 quadCurve(p1,cp,p2),
                 synapse(radius,weight,alpha),
@@ -549,13 +241,17 @@
             return connections
         }
 
-        function cell(radius,s,percent) {
+        function cell(radius,s,percent,cons) {
             
-            weights = [1,2,3,4,5,6,7,8,9,10]
+            // TODO: connections to other cells
+            weights = [1,2,3,4,5,6,7,8]
+            
             weights.forEach(function(w,i){
                 weights[i] = Math.random() * 4.0 - 2.0
             })
+
             connections = makeCons(weights)
+            // TODO
 
             return style(s,
                 group(connections.concat([
@@ -794,14 +490,14 @@
 
         // Draw scene
         //
-        function draw() {
+        function drawSingleCell() {
 
             // TODO: check
             // paper.globalCompositeOperation = 'destination-over';
             
             clear()
 
-            var s = {
+            s = {
                 fillColor  : "lightgrey",
                 strokeColor: "blue", // default
                 lineWidth: 1,
@@ -861,9 +557,106 @@
             //window.requestAnimationFrame(draw)
             
         } 
+    
+        levels = {}
+
+        function getCount(level) {
+            if (levels[level] == undefined) {
+                return 0
+            } else {
+                return levels[level]
+            }
+        }
+
+        function addCount(level) {
+            if (levels[level] == undefined) {
+                levels[level] = 0
+            } else {
+                levels[level] += 1
+            }
+        }
+
+        function getNextPos(level) {
+            GRID = 100
+            console.debug("level"+level)
+            i = getCount(level)
+            console.debug("i"+i)
+            pos = {x: level*GRID+100, y: i*GRID+70}
+            return pos
+        }
+
+        function createCell(c, style) {
+
+            percent = 50
+            radius  = 30
+
+            ct = transform(
+                getNextPos(c.level),
+                cell(radius, style, percent)
+            )
+
+            addCount(c.level)
+
+            return ct
+        }
+
+    function main() {
+
+        cstyle = {
+            fillColor  : "lightgrey",
+            strokeColor: "blue", // default
+            lineWidth: 1,
+        }
+
+        cellInfos = [
+            {
+                name: "c1",
+                level: 0, 
+                out:[
+                    {to: "c3", weight: -1.0},
+                    {to: "c4", weight: +1.5},
+                ] 
+            },
+            {
+                name: "c2",
+                level: 0,
+                out: [
+                    {to: "c3", weight: +1.0},
+                    {to: "c4", weight: -2.5},
+                ] 
+            },
+            {
+                name: "c3",
+                level: 1,
+                in: [
+                    {from: "c1", weight: +1.0},
+                    {from: "c2", weight: -1.0},
+                ]
+            },
+            {
+                name: "c4",
+                level: 1,
+                in: [
+                    {from: "c1", weight: +1.5},
+                    {from: "c2", weight: -2.5},
+                ]
+            },
+        ]
+
+        // Create cells
+        newCells = cellInfos.map(
+            function(ci) {
+                return createCell(ci, cstyle)
+            }
+        )
+
+        // Draw cells
+        group(newCells)()
+
+    }
     </script>
 </head>
-<body onload="init();draw();">
+<body onload="init();main();">
     <h1>Scene</h1>
     <canvas id="scene" width="500" height="500" style="border:1px solid grey"></canvas>
 </body>
