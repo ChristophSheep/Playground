@@ -119,7 +119,6 @@ function bezCurve(p1,cp1,cp2,p2) {
     fns = [
         function() {
             paper.beginPath()
-            
             paper.moveTo(p1.x,p1.y)
             paper.bezierCurveTo(cp1.x,cp1.y,cp2.x,cp2.y,p2.x,p2.y)
             paper.stroke()

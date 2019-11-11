@@ -48,7 +48,7 @@
             })
 
             // Start animation
-            window.requestAnimationFrame(main)
+            // window.requestAnimationFrame(main)
         }
 
         //
@@ -165,8 +165,9 @@
                 return fillColorColor
             }
                  
-            length = 120
+            length = radius
             fillColorColor = getColor(percent)
+
             return transform(
                 {x:radius,y:0},
                 style(
@@ -212,49 +213,48 @@
             )
         }
 
-        function connection(radius, weight, alpha) {
-            p2 = polar(radius,alpha)
-            cp = polar(radius*1.5,alpha)
-            p1 = polar(radius*1.5,alpha)
-            p1.x = -100
-            return group([
-                quadCurve(p1,cp,p2),
-                synapse(radius,weight,alpha),
-            ])
+        function connectionPoint(radius, weight, alpha) {
+            return synapse(radius,weight,alpha)
         }
 
-        function makeCons(weights) {
-            
-            alpha = 40
-            lenAlpha = 360 - 2*alpha
-
-            count = weights.length
+        function calcAlpha(i, count) {
+            startAlpha = 40
+            lenAlpha = 360 - 2*startAlpha
             delta = lenAlpha / (count + 1)
-
-            connections = []
-            weights.forEach(function(w,i){
-                connections.push(
-                    connection(radius, w, alpha + delta*(i+1))
-                )  
-            })
-
-            return connections
+            alpha = startAlpha + delta*(i+1)
+            return alpha
         }
 
-        function cell(radius,s,percent,cons) {
+        function getP2CP2(i, count, tl) {
             
-            // TODO: connections to other cells
-            weights = [1,2,3,4,5,6,7,8]
+            alpha = calcAlpha(i, count)
+
+            p2 = polar(radius,alpha)
+            cp2 = polar(radius+tl,alpha) // TODO: tangent length
             
-            weights.forEach(function(w,i){
-                weights[i] = Math.random() * 4.0 - 2.0
+            return {p2:p2, cp2:cp2}
+        }
+
+        function makeSynapses(cellInfo) {
+            
+            count = cellInfo.in.length
+            synapses = []
+
+            cellInfo.in.forEach(function(inConnection,i) {
+                alpha = calcAlpha(i, count)
+                s = synapse(radius, inConnection.weight, alpha)        
+                synapses.push(s)
             })
 
-            connections = makeCons(weights)
-            // TODO
+            return synapses
+        }
 
+        function cell(radius,s,percent,cellInfo) {
+            
+            synapses = makeSynapses(cellInfo)
+        
             return style(s,
-                group(connections.concat([
+                group(synapses.concat([
                     axon(radius,percent),
                     background(radius),
                     drendride(radius, percent),
@@ -559,8 +559,10 @@
         } 
     
         levels = {}
+        positions = {}
 
         function getCount(level) {
+      
             if (levels[level] == undefined) {
                 return 0
             } else {
@@ -574,44 +576,57 @@
             } else {
                 levels[level] += 1
             }
+            console.debug(levels)
         }
 
         function getNextPos(level) {
-            GRID = 100
-            console.debug("level"+level)
+            GRID = 250
             i = getCount(level)
-            console.debug("i"+i)
             pos = {x: level*GRID+100, y: i*GRID+70}
             return pos
         }
 
-        function createCell(c, style) {
+        function createConnection(cellInfo, style) {
+
+            // TODO: create input connections
+
+        }
+
+        function createCell(cellInfo, style) {
 
             percent = 50
             radius  = 30
 
-            ct = transform(
-                getNextPos(c.level),
-                cell(radius, style, percent)
-            )
+            addCount(cellInfo.level)
 
-            addCount(c.level)
+            pos = getNextPos(cellInfo.level)
+            positions[cellInfo.name] = pos
+
+            ct = transform(
+                pos,
+                cell(radius, style, percent, cellInfo)
+            )
 
             return ct
         }
 
     function main() {
 
-        cstyle = {
+        cStyle = {
             fillColor  : "lightgrey",
             strokeColor: "blue", // default
             lineWidth: 1,
         }
 
+        ciStyle = cStyle
+
         cellInfos = [
             {
                 name: "c1",
                 level: 0, 
+                in: [
+
+                ],
                 out:[
                     {to: "c3", weight: -1.0},
                     {to: "c4", weight: +1.5},
@@ -620,6 +635,9 @@
             {
                 name: "c2",
                 level: 0,
+                in: [
+
+                ],
                 out: [
                     {to: "c3", weight: +1.0},
                     {to: "c4", weight: -2.5},
@@ -631,27 +649,42 @@
                 in: [
                     {from: "c1", weight: +1.0},
                     {from: "c2", weight: -1.0},
+                ],
+                out:[
+
                 ]
-            },
+            },       
             {
                 name: "c4",
                 level: 1,
                 in: [
                     {from: "c1", weight: +1.5},
                     {from: "c2", weight: -2.5},
-                ]
+                ],
+                out: [
+
+                ],
             },
         ]
 
         // Create cells
         newCells = cellInfos.map(
             function(ci) {
-                return createCell(ci, cstyle)
+                return createCell(ci, cStyle)
             }
         )
 
-        // Draw cells
-        group(newCells)()
+        newConnections = cellInfos.map(
+            function(ci) {
+                // TODO: list of input connections
+                return createConnection(ci, ciStyle)
+            }
+        )
+
+        // Draw cells + connections
+        group(newCells.concat(
+            newConnections)
+        )()
 
     }
     </script>
