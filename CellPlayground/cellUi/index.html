@@ -225,24 +225,15 @@
             return alpha
         }
 
-        function getP2CP2(i, count, tl) {
-            
-            alpha = calcAlpha(i, count)
-
-            p2 = polar(radius,alpha)
-            cp2 = polar(radius+tl,alpha) // TODO: tangent length
-            
-            return {p2:p2, cp2:cp2}
-        }
-
+    
         function makeSynapses(cellInfo) {
             
-            count = cellInfo.in.length
+            count = cellInfo.ins.length
             synapses = []
 
-            cellInfo.in.forEach(function(inConnection,i) {
+            cellInfo.ins.forEach(function(inConn,i) {
                 alpha = calcAlpha(i, count)
-                s = synapse(radius, inConnection.weight, alpha)        
+                s = synapse(radius, inConn.weight, alpha)        
                 synapses.push(s)
             })
 
@@ -586,10 +577,78 @@
             return pos
         }
 
-        function createConnection(cellInfo, style) {
+      
+        function getP2CP2(name, i, count) {
+            
+            tl = 70
+
+            alpha = calcAlpha(i, count)
+
+            p2 = polar(radius,alpha)
+            cp2 = polar(radius+tl,alpha) // TODO: tangent length
+            
+            pos = positions[name]
+            console.debug(positions)
+
+            p2.x = p2.x + pos.x
+            p2.y = p2.y + pos.y
+
+            cp2.x = cp2.x + pos.x
+            cp2.y = cp2.y + pos.y
+
+            console.debug("p2")
+            console.debug(p2)
+       
+            return {p2:p2, cp2:cp2}
+        }
+
+        function getP1CP1(name) {
+            radius = 30 // TODO
+            axion = 30  // TODO
+            tl = 80     // TODO: settings
+
+            pos = positions[name]
+
+            //console.debug("getP1Cp1 name:"+name)
+            
+            p1 = {
+                x: pos.x+radius+axion,
+                y: pos.y
+            }
+
+            cp1 = {
+                x: pos.x+radius+axion + tl,
+                y: pos.y
+            }
+
+            //console.debug("p1")
+            //console.debug(p1)
+
+            return {p1:p1, cp1:cp1}
+        }
+
+        function connectionLine(inCon, i, ci, count) {
+              
+            foo = getP2CP2(ci.name, i, count)
+            bar = getP1CP1(inCon.from)
+
+            
+            return bezCurve(bar.p1,bar.cp1,foo.cp2,foo.p2)
+        }
+
+        function createConnection(cellInfo, s) {
+
+            lines = []
+            count = cellInfo.ins.length
 
             // TODO: create input connections
+            cellInfo.ins.forEach(function(inCon, i) {
+                l = connectionLine(inCon, i, cellInfo, count)
+                sline = style(s, l)
+                lines.push(sline)
+            });
 
+            return lines;
         }
 
         function createCell(cellInfo, style) {
@@ -600,6 +659,10 @@
             addCount(cellInfo.level)
 
             pos = getNextPos(cellInfo.level)
+
+            pos.x += Math.random()*100
+            pos.y += Math.random()*100
+
             positions[cellInfo.name] = pos
 
             ct = transform(
@@ -624,10 +687,9 @@
             {
                 name: "c1",
                 level: 0, 
-                in: [
-
+                ins: [
                 ],
-                out:[
+                outs:[
                     {to: "c3", weight: -1.0},
                     {to: "c4", weight: +1.5},
                 ] 
@@ -635,10 +697,9 @@
             {
                 name: "c2",
                 level: 0,
-                in: [
-
+                ins: [
                 ],
-                out: [
+                outs: [
                     {to: "c3", weight: +1.0},
                     {to: "c4", weight: -2.5},
                 ] 
@@ -646,23 +707,21 @@
             {
                 name: "c3",
                 level: 1,
-                in: [
+                ins: [
                     {from: "c1", weight: +1.0},
                     {from: "c2", weight: -1.0},
                 ],
-                out:[
-
+                outs:[
                 ]
             },       
             {
                 name: "c4",
                 level: 1,
-                in: [
+                ins: [
                     {from: "c1", weight: +1.5},
                     {from: "c2", weight: -2.5},
                 ],
-                out: [
-
+                outs: [
                 ],
             },
         ]
@@ -678,13 +737,24 @@
             function(ci) {
                 // TODO: list of input connections
                 return createConnection(ci, ciStyle)
+
             }
         )
-
-        // Draw cells + connections
-        group(newCells.concat(
-            newConnections)
-        )()
+        
+        // TODO: flatten 
+        /*
+        [
+            [c1,c2],
+            [c3,c4]
+        ]
+        => c1,c2,c3,c4
+        */
+        
+        cls = flatten(newConnections)
+        console.debug(cls)
+      
+        // Draw cells + connectionLines
+        group(newCells.concat(cls))()
 
     }
     </script>

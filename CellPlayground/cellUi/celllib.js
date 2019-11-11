@@ -42,6 +42,18 @@ function range(n) {
         .map(idx)
 }
 
+// Flatten flattens a list of list into list
+//
+function flatten(xxs) {
+    res = []
+    xxs.forEach(function(xs) {
+        xs.forEach(function(x){
+            res.push(x)
+        })
+    });
+    return res
+}
+
 // Bezier 3. Grades - start,end point and 2 control points
 //
 // 0 <= t <= 1
