@@ -154,18 +154,17 @@
 
         // Axon
         //
-        function axon(radius, percent) {
+        function axon(radius, len, percent) {
 
             function getColor(percent) {
                 if (percent < 95) {
-                    fillColorColor = "lightblue"
+                    fillColorColor = "lightblue" // TODO: Style
                 } else {
-                    fillColorColor = "blue"
+                    fillColorColor = "blue"     // TODO: Style
                 }
                 return fillColorColor
             }
                  
-            length = radius
             fillColorColor = getColor(percent)
 
             return transform(
@@ -174,8 +173,11 @@
                     {fillColor:fillColorColor},
                     group([
                         transform(
-                            {x:length/2,y:0},
-                            rect(length,radius*0.05)
+                            {
+                                x: len/2,
+                                y: 0
+                            },
+                            rect(len,radius*0.03)
                         ),
                         circle(radius*0.1),
                     ])
@@ -213,10 +215,6 @@
             )
         }
 
-        function connectionPoint(radius, weight, alpha) {
-            return synapse(radius,weight,alpha)
-        }
-
         function calcAlpha(i, count) {
             startAlpha = 40
             lenAlpha = 360 - 2*startAlpha
@@ -225,31 +223,30 @@
             return alpha
         }
 
-    
-        function makeSynapses(cellInfo) {
+        function makeSynapses(settings, cellInfo) {
             
             count = cellInfo.ins.length
             synapses = []
 
             cellInfo.ins.forEach(function(inConn,i) {
                 alpha = calcAlpha(i, count)
-                s = synapse(radius, inConn.weight, alpha)        
+                s = synapse(settings.radius, inConn.weight, alpha)        
                 synapses.push(s)
             })
 
             return synapses
         }
 
-        function cell(radius,s,percent,cellInfo) {
-            
-            synapses = makeSynapses(cellInfo)
+        function cell(settings, cellStyle, cellInfo, percent ) {
+              
+            synapses = makeSynapses(settings, cellInfo)
         
-            return style(s,
+            return style(cellStyle,
                 group(synapses.concat([
-                    axon(radius,percent),
-                    background(radius),
-                    drendride(radius, percent),
-                    soma(radius, percent)
+                    axon(settings.radius, settings.axionLen, percent),
+                    background(settings.radius),
+                    drendride(settings.radius, percent),
+                    soma(settings.radius, percent)
                     ])
                 )
             )
@@ -567,97 +564,95 @@
             } else {
                 levels[level] += 1
             }
-            console.debug(levels)
         }
 
         function getNextPos(level) {
+
+            // TODO: settings
             GRID = 250
-            i = getCount(level)
-            pos = {x: level*GRID+100, y: i*GRID+70}
+            count = getCount(level)
+            
+            pos = {
+                x: level * GRID + 100, // TODO: settings
+                y: count * GRID + 70   // TODO: settings
+            }
+
             return pos
         }
 
-      
-        function getP2CP2(name, i, count) {
+        function getP2CP2(settings, pos, i, count) {
             
-            tl = 70
-
             alpha = calcAlpha(i, count)
 
-            p2 = polar(radius,alpha)
-            cp2 = polar(radius+tl,alpha) // TODO: tangent length
+            p2 = polar(settings.radius, alpha)
+            cp2 = polar(settings.radius + settings.tangentLen, alpha)
             
-            pos = positions[name]
-            console.debug(positions)
+            p2 = add(p2, pos)
+            cp2 = add(cp2, pos)
 
-            p2.x = p2.x + pos.x
-            p2.y = p2.y + pos.y
-
-            cp2.x = cp2.x + pos.x
-            cp2.y = cp2.y + pos.y
-
-            console.debug("p2")
-            console.debug(p2)
-       
-            return {p2:p2, cp2:cp2}
+            return {
+                p2 : p2, 
+                cp2: cp2
+            }
         }
 
-        function getP1CP1(name) {
-            radius = 30 // TODO
-            axion = 30  // TODO
-            tl = 80     // TODO: settings
-
-            pos = positions[name]
-
-            //console.debug("getP1Cp1 name:"+name)
-            
+        function getP1CP1(settings, pos) {
+             
             p1 = {
-                x: pos.x+radius+axion,
-                y: pos.y
+                x: settings.radius + settings.axionLen,
+                y: 0
             }
 
             cp1 = {
-                x: pos.x+radius+axion + tl,
-                y: pos.y
+                x: settings.radius + settings.axionLen + settings.tangentLen,
+                y: 0
             }
 
-            //console.debug("p1")
-            //console.debug(p1)
+            p1 = add(p1, pos)
+            cp1 = add(cp1, pos)
 
-            return {p1:p1, cp1:cp1}
+            return {
+                p1 : p1, 
+                cp1: cp1
+            }
         }
 
-        function connectionLine(inCon, i, ci, count) {
+        function connectionLine(settings, nameFrom, nameTo, i, count) {
               
-            foo = getP2CP2(ci.name, i, count)
-            bar = getP1CP1(inCon.from)
+            posA = positions[nameFrom]
+            posB = positions[nameTo]
 
-            
-            return bezCurve(bar.p1,bar.cp1,foo.cp2,foo.p2)
+            // Merge two objects togeter
+            a = getP1CP1(settings, posA )
+            b = getP2CP2(settings, posB, i, count)
+
+            console.debug(a)
+           
+            return bezCurve(a.p1, a.cp1, b.cp2, b.p2)
         }
 
-        function createConnection(cellInfo, s) {
+        function createConnection(settings, cellInfo, conStyle) {
 
             lines = []
             count = cellInfo.ins.length
 
-            // TODO: create input connections
-            cellInfo.ins.forEach(function(inCon, i) {
-                l = connectionLine(inCon, i, cellInfo, count)
-                sline = style(s, l)
-                lines.push(sline)
+            cellInfo.ins.forEach(function(c, i) {
+                nameFrom = c.from
+                nameTo = cellInfo.name
+                conLine = style(conStyle, 
+                    connectionLine(settings, nameFrom, nameTo, i, count)
+                )
+                lines.push(conLine)
             });
 
             return lines;
         }
 
-        function createCell(cellInfo, style) {
+        function createCell(settings, cellInfo, cellStyle) {
 
             percent = 50
-            radius  = 30
-
+          
             addCount(cellInfo.level)
-
             pos = getNextPos(cellInfo.level)
 
             pos.x += Math.random()*100
@@ -667,7 +662,7 @@
 
             ct = transform(
                 pos,
-                cell(radius, style, percent, cellInfo)
+                cell(settings, cellStyle, cellInfo, percent )
             )
 
             return ct
@@ -675,13 +670,19 @@
 
     function main() {
 
-        cStyle = {
+        settings = {
+            radius      : 30,
+            tangentLen  : 20,
+            axionLen    : 30,
+        }
+
+        cellStyle = {
             fillColor  : "lightgrey",
             strokeColor: "blue", // default
             lineWidth: 1,
         }
 
-        ciStyle = cStyle
+        conStyle = cellStyle
 
         cellInfos = [
             {
@@ -726,35 +727,25 @@
             },
         ]
 
+    
         // Create cells
         newCells = cellInfos.map(
-            function(ci) {
-                return createCell(ci, cStyle)
+            function(cellInfo) {
+                return createCell(settings, cellInfo, cellStyle)
             }
         )
 
+        // Create connection lines
         newConnections = cellInfos.map(
-            function(ci) {
-                // TODO: list of input connections
-                return createConnection(ci, ciStyle)
-
+            function(cellInfo) {
+                return createConnection(settings, cellInfo, conStyle)
             }
         )
         
-        // TODO: flatten 
-        /*
-        [
-            [c1,c2],
-            [c3,c4]
-        ]
-        => c1,c2,c3,c4
-        */
-        
-        cls = flatten(newConnections)
-        console.debug(cls)
+        connLines = flatten(newConnections)
       
         // Draw cells + connectionLines
-        group(newCells.concat(cls))()
+        group(newCells.concat(connLines))()
 
     }
     </script>

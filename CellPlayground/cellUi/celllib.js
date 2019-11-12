@@ -11,7 +11,7 @@ function deg2rad(alpha) {
 
 // Clamp returns val clipped with min and max
 //
-function clamp(min,max,val) {
+function clamp(min, max, val) {
     if (val < min) {
         val = min
     }
@@ -24,11 +24,19 @@ function clamp(min,max,val) {
 // Polar returns x,y coordinates of
 // vector with raduis and alpha
 //
-function polar(radius,alpha) {
+function polar(radius, alpha) {
     return {
-        x:radius*Math.cos(deg2rad(alpha)),
-        y:radius*Math.sin(deg2rad(alpha))
+        x: radius * Math.cos(deg2rad(alpha)),
+        y: radius * Math.sin(deg2rad(alpha))
     }
+}
+
+// Add adds to points (x,y)
+//
+function add(a, b) {
+    a.x = a.x + b.x
+    a.y = a.y + b.y
+    return a
 }
 
 // Range create a list [0,1,2,...,n]
