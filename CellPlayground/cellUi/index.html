@@ -119,9 +119,10 @@
                 font         : fontSize+'px Arial',
             }
 
-            stext = transform({
-                    x:radius/2,
-                    y:0
+            stext = transform(
+                {
+                    x: radius/2,
+                    y: 0
                 },
                 style(
                     txtStyle,
@@ -130,17 +131,17 @@
             )
 
             kernel = style({
-                    fillColor:"rgba(0,0,255,0.5)", 
-                    lineWidth:2
+                    fillColor: "rgba(0,0,255,0.5)", 
+                    lineWidth: 2
                 },
                 circle(kradius)
             )
 
             threshold = style({
-                strokeColor:"red",
-                fillColor:"rgba(0,0,0,0)",
-                lineDash:[7,1,1,1],
-                lineDashOffset: 2,
+                    strokeColor   : "red",
+                    fillColor     : "rgba(0,0,0,0)",
+                    lineDash      : [7,1,1,1],
+                    lineDashOffset: 2,
                 },
                 circle(10)
             )
@@ -168,7 +169,10 @@
             fillColorColor = getColor(percent)
 
             return transform(
-                {x:radius,y:0},
+                {
+                    x: radius,
+                    y: 0
+                },
                 style(
                     {fillColor:fillColorColor},
                     group([
@@ -251,8 +255,6 @@
                 )
             )
         }
-
-       
 
         // Diagram (action potential)
         //
@@ -650,7 +652,7 @@
 
         function createCell(settings, cellInfo, cellStyle) {
 
-            percent = 50
+            percent = Math.trunc(Math.random() * 25) + 25
           
             addCount(cellInfo.level)
             pos = getNextPos(cellInfo.level)
