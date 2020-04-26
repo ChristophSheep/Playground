@@ -33,15 +33,17 @@ func createInputHandler(inputName string) func(*websocket.Conn) {
 	return inputHandler
 }
 
-func outputSender(ws *websocket.Conn, done chan bool) {
+func outputSender(ws *websocket.Conn, outChannel chan string, done chan bool) {
 	count := 0
 	max := 5
 
 	for {
 
-		message := "Don't kill the messenger"
+		message := <-outChannel
+
+		//message := "Don't kill the messenger"
 		websocket.Message.Send(ws, message)
-		time.Sleep(10 * time.Millisecond)
+		//time.Sleep(10 * time.Millisecond)
 		fmt.Printf("    Send message '%s' to server\n", message)
 
 		count++
@@ -65,6 +67,8 @@ func outputSender(ws *websocket.Conn, done chan bool) {
 func main() {
 
 	done := make(chan bool)
+
+	outChannel := make(chan string)
 
 	createServer := func() {
 
@@ -93,12 +97,20 @@ func main() {
 			return
 		}
 
-		outputSender(ws, done)
+		outputSender(ws, outChannel, done)
 	}
 
-	go createServer()
-	go createClient(inputA)
-	go createClient(inputB)
+	go createServer()       // with two input channels [A,B]
+	go createClient(inputA) // Connect to server input channel A
+	go createClient(inputB) // Connect to server input channel B
+
+	// Send some data out
+	go func() {
+		for {
+			outChannel <- fmt.Sprintf("%s", time.Now().Format(time.RFC850))
+			time.Sleep(500 * time.Millisecond)
+		}
+	}()
 
 	<-done
 	fmt.Println("Done ....")
