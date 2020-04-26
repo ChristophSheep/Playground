@@ -8,19 +8,38 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-// Spec TODO
+// Spec to create a cell
 type Spec struct {
+	Name       string
 	IP         string
 	Port       string
 	Attributes []attribute.Attribute
 }
 
-// Cell TODO
-type Cell struct {
-	Name       string
-	IP         string
-	Port       string
-	Attributes []attribute.Attribute
+// Cell interface
+type Cell interface {
+	Name() string
+	IP() string
+	Port() string
+	Origin() string
+	GetAttributByName(string) attribute.Attribute
+	ConnectTo(attribute.Attribute, Cell, attribute.Attribute)
+}
+
+type connection struct {
+	src      Cell
+	srcAttr  attribute.Attribute
+	dest     Cell
+	destAttr attribute.Attribute
+	wsConn   *websocket.Conn // WebSocket Connection
+}
+
+type cell struct {
+	name        string
+	ip          string
+	port        string
+	attributes  []attribute.Attribute
+	connections []connection
 }
 
 func createInputHandler(inputName string) func(*websocket.Conn) {
@@ -40,34 +59,21 @@ func createInputHandler(inputName string) func(*websocket.Conn) {
 	return inputHandler
 }
 
-func createInputs(spec Spec) error {
+func createInputs(spec Spec) {
 
 	// Create an input connection point
 	// for each attributes
 	// ws://{ip}:{port}/{Name}
-	// ws://localhost:1234/A
+	// e.g.
+	//   ws://localhost:1234/A
 	for _, attr := range spec.Attributes {
 		http.Handle("/"+attr.Name(), websocket.Handler(createInputHandler(attr.Name())))
 	}
-
-	// Listen to clients connecting
-	err := http.ListenAndServe(createAddress(spec), nil)
-
-	// Show Error
-	if err != nil {
-		panic("ListenAndServe: " + err.Error())
-	}
-	return err
 }
 
 func createAddress(spec Spec) string {
 	address := spec.IP + ":" + spec.Port
 	return address
-}
-
-func createOutputs(spec Spec) error {
-	// TODO
-	return nil
 }
 
 // Create TODO
@@ -82,26 +88,86 @@ func createOutputs(spec Spec) error {
 //
 //    server        client			 server        client
 //
-func Create(spec Spec) error {
+func Create(spec Spec) Cell {
 
 	var err error
 
 	// Create INPUT connection points
 	// e.g. ws://localhost:1234/inputA
-	err = createInputs(spec)
+	createInputs(spec)
 
-	// Show Error
+	// Listen to clients connecting
+	// ws://{ip}:{port}/{Name}
+	// e.g.
+	//   ws://localhost:1234
+	err = http.ListenAndServe(createAddress(spec), nil)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
-	// create OUTPUTS connection points
-	err = createOutputs(spec)
-
-	// Show Error
-	if err != nil {
-		return err
+	// Cell itself
+	//
+	c := cell{
+		name:       spec.Name,
+		ip:         spec.IP,
+		port:       spec.Port,
+		attributes: spec.Attributes,
 	}
 
-	return nil
+	fmt.Printf("Cell %s\n created", spec.Name)
+	return c
+}
+
+func (c cell) Name() string {
+	return c.name
+}
+
+func (c cell) IP() string {
+	return c.ip
+}
+
+func (c cell) Port() string {
+	return c.port
+}
+
+// Origin TODO
+func (c cell) Origin() string {
+	return fmt.Sprintf("http://%s:%s", c.ip, c.port)
+}
+
+// GetAttributByName TODO
+func (c cell) GetAttributByName(name string) attribute.Attribute {
+	for _, attr := range c.attributes {
+		if attr.Name() == name {
+			return attr
+		}
+	}
+	return attribute.Empty
+}
+
+func getDestURL(dest Cell, destAttr attribute.Attribute) string {
+	url := fmt.Sprintf("ws://%s:%s/%s", dest.IP(), dest.Port(), destAttr.Name())
+	return url
+}
+
+// ConnectTo TODO
+func (c cell) ConnectTo(srcAttr attribute.Attribute, dest Cell, destAttr attribute.Attribute) {
+
+	// Establish connection
+	wsConn, err := websocket.Dial(getDestURL(dest, destAttr), "", dest.Origin())
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// Add connection
+	conn := connection{
+		src:      c,
+		srcAttr:  srcAttr,
+		dest:     dest,
+		destAttr: destAttr,
+		wsConn:   wsConn,
+	}
+	c.connections = append(c.connections, conn)
+
 }

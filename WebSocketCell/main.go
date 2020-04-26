@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/mysheep/attribute"
 	"github.com/mysheep/wscell"
 )
@@ -20,6 +18,15 @@ import (
 //
 func main() {
 
+	//
+	// Info: Only one cell could be create by one process
+	//
+
+	// TODO:
+	// - So we need a JSON Config
+	// - Config has information about cell
+	// - COnfig has information about connect to
+
 	attrA := attribute.CreateIntAttribute("A")
 	attrB := attribute.CreateIntAttribute("B")
 
@@ -32,7 +39,20 @@ func main() {
 		},
 	}
 
+	// Cell 1
+	//
 	cell1 := wscell.Create(spec1)
-	fmt.Println(cell1)
 
+	// TODO
+	spec2 := spec1
+
+	// Cell 2
+	//
+	cell2 := wscell.Create(spec2)
+
+	// TODO
+
+	// cell1.A -----> cell2.A
+	//
+	cell1.ConnectTo(cell1.GetAttributByName("A"), cell2, cell2.GetAttributByName("A"))
 }

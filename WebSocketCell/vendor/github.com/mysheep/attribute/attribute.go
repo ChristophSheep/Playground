@@ -52,6 +52,14 @@ func createAttribute(name string) attribute {
 	return attr
 }
 
+// Empty attribute
+var Empty = attribute{
+	name:        "Empty",
+	isReadable:  false,
+	isWriteable: false,
+	isStoreable: false,
+}
+
 // String
 func (a attribute) String() string {
 	return fmt.Sprintf("Name:\"%v\", Value:%v, Readable:%v, Writeable:%v, Storeable:%v", a.Name(), a.Value(), a.IsReadable(), a.IsWriteable(), a.IsStoreable())
