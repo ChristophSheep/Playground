@@ -1,0 +1,62 @@
+% IANA WHOIS server
+% for more information on IANA, visit http://www.iana.org
+% This query returned 1 object
+
+refer:        whois.arin.net
+
+inetnum:      199.0.0.0 - 199.255.255.255
+organisation: ARIN
+status:       ALLOCATED
+
+whois:        whois.arin.net
+
+changed:      1993-05
+source:       IANA
+
+# whois.arin.net
+
+NetRange:       199.232.0.0 - 199.232.255.255
+CIDR:           199.232.0.0/16
+NetName:        SKYCA-3
+NetHandle:      NET-199-232-0-0-1
+Parent:         NET199 (NET-199-0-0-0-0)
+NetType:        Direct Assignment
+OriginAS:       
+Organization:   Fastly (SKYCA-3)
+RegDate:        2016-04-14
+Updated:        2016-04-14
+Ref:            https://rdap.arin.net/registry/ip/199.232.0.0
+
+
+
+OrgName:        Fastly
+OrgId:          SKYCA-3
+Address:        PO Box 78266
+City:           San Francisco
+StateProv:      CA
+PostalCode:     94107
+Country:        US
+RegDate:        2011-09-16
+Updated:        2020-04-09
+Ref:            https://rdap.arin.net/registry/entity/SKYCA-3
+
+
+OrgTechHandle: FRA19-ARIN
+OrgTechName:   Fastly RIR Administrator
+OrgTechPhone:  +1-415-404-9374 
+OrgTechEmail:  rir-admin@fastly.com
+OrgTechRef:    https://rdap.arin.net/registry/entity/FRA19-ARIN
+
+OrgAbuseHandle: ABUSE4771-ARIN
+OrgAbuseName:   Abuse Account
+OrgAbusePhone:  +1-415-496-9353 
+OrgAbuseEmail:  abuse@fastly.com
+OrgAbuseRef:    https://rdap.arin.net/registry/entity/ABUSE4771-ARIN
+
+OrgNOCHandle: FNO19-ARIN
+OrgNOCName:   Fastly Network Operations
+OrgNOCPhone:  +1-415-404-9374 
+OrgNOCEmail:  noc@fastly.com
+OrgNOCRef:    https://rdap.arin.net/registry/entity/FNO19-ARIN
+
+

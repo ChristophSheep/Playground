@@ -1,0 +1,354 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>WLAN Box</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <script type="text/javascript">var g_navitem = -1;</script>
+  <script type="text/javascript"> var g_focus = -1;</script>
+  <script type='text/javascript' src='/util.js'></script>
+  <script type="text/javascript">var g_dir = getLanguageDirection("de");</script>
+  <link rel="stylesheet" type="text/css" href="/styles.css">
+  <!-- Fix for CPE_P00112452 -->
+  <script>
+    function setCookie(name,value,days)
+    {
+        if (days)
+        {
+            var date = new Date();
+            date.setTime(date.getTime()+(days*24*60*60*1000));
+            var expires = "; expires="+date.toGMTString();
+        }
+        else
+            var expires = "";
+
+        document.cookie = name+"="+value+expires+"; path=/";
+    }
+
+    function getCookie(c_name)
+    {
+        var i,x,y,ARRcookies=document.cookie.split(";");
+        for (i=0;i<ARRcookies.length;i++)
+        {
+            x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+            y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+            x=x.replace(/^\s+|\s+$/g,"");
+            if (x==c_name)
+            {
+                return unescape(y);
+            }
+        }
+    }   
+
+    function eraseCookie(name)
+    {  
+        setCookie(name,"",-1);
+    }
+
+    function reload()
+    {
+        var useragent = navigator.userAgent;
+        var url = document.URL;
+        var isFirefox = useragent.search("Firefox");
+        var isTelephonyPage = url.search("cgi/b/_voip_/ov");
+        if ( isFirefox > 0 && isTelephonyPage > 0 )
+        {
+            var cookie = getCookie("test");
+            if (cookie == null)
+            {
+                document.getElementById("reload").innerHTML="Loading data... Please Wait...";
+                setCookie("test","test",1);
+                location.reload(true);
+            }
+            else
+            {
+                eraseCookie("test");
+            }
+        }
+    }
+  </script> 
+  <!-- Fix for CPE_P00112452 -->
+</head>
+<body onLoad="reload();setFocus();" height="100%" style="margin:0px;">
+  <noscript>
+    <h1>A1 WLAN Box</h1>
+    <h4>Um die Web-Oberfläche des Geräts anzeigen zu können, benötigen Sie einen Browser mit aktivierter JavaScript-Unterstützung! <br><br>Aktivieren Sie Skriptsprachen, und aktualisieren Sie den Browser.</h4>
+  </noscript>
+  <table cellspacing="0" cellpadding="0" border="0" class="main" height="100%" width="960">
+    <tr>
+      <td colspan="2">
+        <table cellspacing="0" cellpadding="0" class="banner" width="100%">
+          <tr>
+          	<td>		
+              <table class="nopadtable">
+                <tr><td id="productName" class="product js_right">
+		          	<script type="text/javascript">
+		                var headerText = 'A1 WLAN Box';
+		                document.write(headerText.replace(" ","&nbsp;"));
+		            </script>
+				</td></tr>
+                <tr><td class="displaySettings js_right" id="displaySettings">
+					<script type="text/javascript">
+							writeDisplaySettings();
+					</script>
+					<span class="langSelect" id="langSelect">
+						<script type="text/javascript">
+							document.write('|&nbsp;'+'Sprache'+':');
+						</script><form name="langSelect" action="/cgi/language.cgi" method=post><span class="langSelect"><input type="hidden" name=30 value="en"><input type="hidden" name='2' value='336549115'>
+<strong>de</strong>&nbsp;
+<a href="" onClick="setLanguage('en');submitForm(document.langSelect,0);return false;" title="English">en</a>&nbsp;</span></form>
+					</span>            
+				</td></tr>
+				<script type="text/javascript">					
+                    if (0==1) {
+                      var start;
+                      var urlstr = "://";
+                      if ((start=location.href.indexOf(urlstr)) != -1) {
+                        var url = new String(location.href.substr(start+urlstr.length));
+                        GoAndRemember("/aws.lp", "url="+url);
+                      }
+                    }
+                </script>
+				<script type="text/javascript">
+					if (document.getElementById('langSelect').innerHTML.search("setLanguage")==-1)
+						document.getElementById('langSelect').style.visibility = "hidden";
+	            </script>	
+              </table>
+            </td>
+            <td class="logo js_left">
+				<img src="/images/logo.gif"/>
+            </td> 
+			</tr><tr>
+            <td colspan="2"><script type="text/javascript">pm_write_messages();</script>
+</td>           
+          </tr> 
+        </table>
+      </td>
+    </tr>
+    <tr>	
+      <td class="Menu">
+        <script type="text/javascript">writeMenu();</script>&nbsp;
+      </td>
+      <td class="page" style="width:760px">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+          <script type="text/javascript">writeNavBar();</script>
+          <tr>
+            <td>
+              <table cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td>
+
+
+<div class='contentcontainer'>
+<form name='connectionlist' action='/?connections/list' method='post'>
+<input type='hidden' name='0' value=''>
+<input type='hidden' name='1' value=''>
+<input type='hidden' name='2' value='952778947'>
+<table class='edittable' width='100%' cellspacing='1' border='1' style='border-color:white'>
+<tr><th align="left">Verbindungsstatus Übersicht</th></tr>
+<tr><th><img src="/images/hnw___xl.gif"><span id="total_connections">Verbindungsstatus Übersicht</span></th></tr>
+<tr><th>
+<table cellspacing='0' cellpadding='0' ><tr><td width='40' valign='top'><img src='/images/spacer.gif' alt=''></td><td valign='top'>
+<table width='100%' class='datatable' cellspacing='0' cellpadding='0'>
+<tr><td></td><td width='30px'></td><td width=''></td><td width='50px'></td></tr>
+<tr><td width='170'>Protocol</td><td colspan='3'><select id = 'conn_filter_protocol'  name='30' style='width: 170px' onChange='populateConnections(this.value,"protocol")'>
+<option value='ALL' >ALLE</option>
+<option value='' >NULL</option>
+<option value='tcp(6)' >TCP</option>
+<option value='udp(17)' >UDP</option>
+<option value='ipv6-icmp' ></option>
+<option value='igmp' >IGMP</option>
+</td><td width='170'>WAN Status:</td><td colspan='3'><select id = 'conn_filter_wan'  name='30' style='width: 170px' onChange='populateConnections(this.value,"wan_status")'>
+<option value='ALL' >ALLE</option>
+<option value='' >NULL</option>
+<option value='CLOSED' >GESCHLOSSEN</option>
+<option value='LISTEN' >ABHÖREN</option>
+<option value='SYN_SENT' >SYN_GESENDET</option>
+<option value='SYN_RECEIVED' >SYN_EMPFANGEN</option>
+<option value='ESTABLISHED' >HERGESTELLT</option>
+<option value='CLOSE_WAIT' >SCHLIESSEN_WARTEN</option>
+<option value='FIN_WAIT_1' >FIN_WARTEN_1</option>
+<option value='CLOSING' >SCHLIESSEN</option>
+<option value='LAST_ACK' >LETZTE_ACK</option>
+<option value='FIN_WAIT_2' >FIN_WARTEN_2</option>
+<option value='TIME_WAIT' >ZEIT_WARTEN</option>
+<option value='ALIVE_PROBE1' >ALIVE_PROBE1</option>
+<option value='ALIVE_PROBE2' >ALIVE_PROBE2</option>
+<option value='NON_TCP' >NICHT_TCP</option>
+</td><td width='170'>ALG</td><td colspan='3'><select id = 'conn_filter_alg'  name='30' style='width: 170px' onChange='populateConnections(this.value,"ALG")'>
+<option value='ALL' >ALLE</option>
+<option value='' >NULL</option>
+<option value='PPTP' >PPTP</option>
+<option value='AH' ></option>
+<option value='ESP' ></option>
+<option value='IKE' ></option>
+<option value='SIP(TCP)' ></option>
+<option value='SIP(UDP)' ></option>
+<option value='HTTPI' >HTTPi</option>
+<option value='FCC' ></option>
+<option value='JABBER' ></option>
+<option value='CU/SeeMe' ></option>
+<option value='RAUDIO(PNA)' ></option>
+<option value='RTSP' ></option>
+<option value='ILS' ></option>
+<option value='H245' ></option>
+<option value='H323' ></option>
+<option value='IRC' ></option>
+<option value='DHCP' >DHCP</option>
+<option value='GAME(UDP)' ></option>
+<option value='CONE(UDP)' ></option>
+<option value='LOOSE(UDP)' ></option>
+<option value='SNMP_TRAP' ></option>
+<option value='FTP' >FTP</option>
+</td><td width='170'>Interface</td><td colspan='3'><select id = 'conn_filter_interface'  name='30' style='width: 170px' onChange='populateConnections(this.value,"interface")'>
+<option value='ALL' >ALLE</option>
+<option value='' >NULL</option>
+<option value='Internet' ></option>
+</td><td width='170'>Routing Mode</td><td colspan='3'><select id = 'conn_filter_route'  name='30' style='width: 170px' onChange='populateConnections(this.value,"routing_mode")'>
+<option value='ALL' >ALLE</option>
+<option value='' >NULL</option>
+<option value='Normal Routing' ></option>
+<option value='NAT' ></option>
+</td><td width='170'>Direction</td><td colspan='3'><select id = 'conn_filter_direction'  name='30' style='width: 170px' onChange='populateConnections(this.value,"direction")'>
+<option value='ALL' >ALLE</option>
+<option value='' >NULL</option>
+<option value='Incoming' ></option>
+<option value='Outgoing' ></option>
+</table>
+</td></tr></table>
+</tr></th>
+<tr><td>
+<table class='edittable' width='100%' cellspacing='1' border='1' style='border-color:white'>
+<tr><th align='center' class='js_right' style='background-color:darkgrey'>#</th><th align='center' class='js_right' style='background-color:darkgrey'>Protokoll</th><th align='center' class='js_right' style='background-color:darkgrey'>LAN</th><th align='center' class='js_right' style='background-color:darkgrey'>A1 WLAN Box</th><th align='center' class='js_right' style='background-color:darkgrey'>WAN</th><th align='center' class='js_right' style='background-color:darkgrey'>WAN-Status</th><th align='center' class='js_right' style='background-color:darkgrey'>Zeitüberschreitung</th><th align='center' class='js_right' style='background-color:darkgrey'>Übertragene Bytes<br>(Tx/Rx)</th><th align='center' class='js_right' style='background-color:darkgrey'></th><th align='center' class='js_right' style='background-color:darkgrey'>ALG</th><th align='center' class='js_right' style='background-color:darkgrey'>Internet-Schnittstelle</th><th align='center' class='js_right' style='background-color:darkgrey'>Routingmodus</th><th align='center' class='js_right' style='background-color:darkgrey'>Richtung</th><th align='center' class='js_right' style='background-color:darkgrey'>Markierungen</th></tr>
+<tbody id="conn_table"><tr><td colspan="14" align="center"><font size="3"><b>Verbindungen laden...</b></font></td></tr></tbody>
+</table>
+</td></tr>
+<tr><td align="center"><input id="refresh" type="button" name="refresh" onclick="ajax_get_connections()" style="widht:50px;height:30px" value="Anzeige aktualisieren"/>
+<input id="reset" type="button" name="reset" onclick="ajax_reset_and_get_connections()" style="widht:50px;height:30px" value="Zurücksetzen"/></td></tr>
+<tr><td><table><tr><th align="left"><i><b>Markierungsbeschreibung:</i></b></th></tr>
+<tr><td align="left">(I) Leerlauf</td><td align="left">(F) Fest</td><td align="left">(O) Schweben</td><td align="left">(P) Hardware-beschleunigung benutzen</td></tr>
+<tr><td align="left">(E) Gerade</td><td align="left">(S) Lose</td><td align="left">(R) Reserviert</td><td align="left">(L) Lange Zeitüberschreitung</td></tr>
+<tr><td align="left">(C) Cone</td><td align="left">(T) Zeitüberschreitung</td><td align="left">(W) Hervorgebracht</td><td align="left">(V) Keine Wiederherstellung</td></tr>
+<tr><td align="left">(J) Ablehnen mit TCP-Reset</td></tr></table></td></tr>
+</table>
+</form>
+<script type="text/javascript" src="/relflib.js"></script>
+<script type="text/javascript">
+var jsonResponse = "";
+var connCount="";
+function ajax_response(rdata)
+{
+window.scrollTo(0,0);
+document.getElementById("conn_filter_protocol").value = "ALL";
+document.getElementById("conn_filter_wan").value = "ALL";
+document.getElementById("conn_filter_interface").value = "ALL";
+document.getElementById("conn_filter_alg").value = "ALL";
+document.getElementById("conn_filter_route").value = "ALL";
+document.getElementById("conn_filter_direction").value = "ALL";
+jsonResponse = JSON.parse(rdata.responseText);
+jsonResponse = jsonResponse.response;
+if(jsonResponse == "no_Connections")
+{
+document.getElementById("conn_table").innerHTML = "<tr><td colspan='14' align='center'><font size='2'><b>Keine Internetverbindung verfügbar</b></font></td></tr>";
+return;}
+populateConnections("ALL","");
+}
+function populateConnections(filter,column)
+{
+if(jsonResponse == "") return;
+var tabelRow="";
+var tCount=0,hwCount=0,swCount=0,naCount=0;
+document.getElementById("conn_table").innerHTML = "";
+for(var index in jsonResponse)
+{
+if(jsonResponse[index].lan == jsonResponse[index].wan_box)
+{
+jsonResponse[index].lan="";
+}if(((filter=="ALL")&&(column == ""))||((filter=="ALL")&&(column=="protocol"))||((filter=="ALL")&&(column=="wan_status"))||((filter=="ALL")&&(column=="ALG"))||((filter=="ALL")&&(column=="direction"))||((filter=="ALL")&&(column=="interface"))||((filter=="ALL")&&(column=="routing_mode")))
+{
+tCount++;
+tabelRow = tabelRow + "<tr>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].id+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].protocal+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].lan+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].wan_box+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].wan+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].wan_status+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].timeout+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].tx_bytes+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].tx_packets+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].bind+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].intf+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].route_mode+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].direction+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].flags+"</td>"
+tabelRow = tabelRow + "</tr>";
+if(jsonResponse[index].ctype=="H"){
+hwCount++;
+}else if(jsonResponse[index].ctype=="S"){
+swCount++;
+}else if(jsonResponse[index].ctype=="N"){
+naCount++;
+}
+}
+else if(((jsonResponse[index].protocal==filter)&&(column=="protocol"))||((jsonResponse[index].wan_status==filter)&&(column=="wan_status"))||((jsonResponse[index].wan_status=="0")&&(filter=="NON_TCP"))||((jsonResponse[index].direction==filter)&&(column=="direction"))||((jsonResponse[index].bind==filter)&&(column=="ALG"))||((jsonResponse[index].intf==filter)&&(column=="interface"))||((jsonResponse[index].route_mode==filter)&&(column=="routing_mode")))
+{
+tCount++;
+tabelRow = tabelRow + "<tr>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].id+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].protocal+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].lan+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].wan_box+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].wan+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].wan_status+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].timeout+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].tx_bytes+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].tx_packets+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].bind+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].intf+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].route_mode+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].direction+"</td>"
+tabelRow = tabelRow + "<td align = 'center'>"+jsonResponse[index].flags+"</td>"
+tabelRow = tabelRow + "</tr>";
+if(jsonResponse[index].ctype=="H"){
+hwCount++;
+}else if(jsonResponse[index].ctype=="S"){
+swCount++;
+}else if(jsonResponse[index].ctype=="N"){
+naCount++;
+}
+}
+}
+document.getElementById("conn_table").innerHTML = tabelRow;
+tabelRow="";
+connCount = "Verbindungsstatus Übersicht: " + tCount + "" + hwCount + " Hardware-mäßig beschleunigt," + swCount + " Software-mäßig beschleunigt," + naCount + " Nicht-beschleunigte Ströme";
+document.getElementById("total_connections").innerHTML = connCount;
+connCount="";
+tCount=0;
+hwCount=0;
+swCount=0;
+naCount=0;
+var bcolor="#FFFFFF",tid = document.getElementById("conn_table");
+for (var i = 1; i<tid.rows.length ; i++) {
+if (bcolor=="#FFFFFF"){
+ tid.rows[i].style.backgroundColor = "#B8B8B8";
+bcolor="#B8B8B8";
+}else{
+ tid.rows[i].style.backgroundColor = "#FFFFFF";
+bcolor="#FFFFFF";}
+}
+}
+function ajax_get_connections()
+{
+document.getElementById("conn_table").innerHTML = "<tr><td colspan='14' align='center'><font size='3'><b>Verbindungen laden...</b></font></td></tr>"
+document.getElementById("total_connections").innerHTML = "Verbindungsstatus Übersicht";
+ajax_get("/?connections/ajax_conn", null, ajax_response)
+}
+ajax_get_connections();
+function ajax_reset_and_get_connections()
+{
+document.getElementById("conn_table").innerHTML = "<tr><td colspan='14' align='center'><font size='3'><b>Verbindungen laden...</b></font></td></tr>"
+document.getElementById("total_connections").innerHTML = "Verbindungsstatus Übersicht";
+ajax_get("/?connections/ajax_reset_conn", null, ajax_response)
+}
+ajax_reset_and_get_connections();
+</script>

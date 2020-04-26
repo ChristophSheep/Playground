@@ -1,0 +1,44 @@
+% IANA WHOIS server
+% for more information on IANA, visit http://www.iana.org
+% This query returned 1 object
+
+inet6num:     2a00:0:0:0:0:0:0:0/12
+organisation: RIPE NCC
+status:       ALLOCATED
+
+whois:        whois.ripe.net
+
+changed:      2006-10-03
+source:       IANA
+
+# whois.ripe.net
+
+inet6num:       2a00:1450:4000::/37
+netname:        IE-GOOGLE-2a00-1450-4000-1
+descr:          EU metro frontend
+country:        ie
+admin-c:        GOOG1-RIPE
+tech-c:         GOOG1-RIPE
+status:         AGGREGATED-BY-LIR
+assignment-size:48
+mnt-by:         MNT-GOOG-PROD
+created:        2016-03-09T19:03:51Z
+last-modified:  2016-03-09T19:03:51Z
+source:         RIPE
+
+role:           Google Ireland Limited
+address:        Google Ireland Limited
+                BARROW STREET  1ST & 2ND FLOOR
+                4  DUBLIN IRELAND
+admin-c:        GOOG-RIPE
+admin-c:        JWS7-RIPE
+tech-c:         GOOG-RIPE
+nic-hdl:        GOOG1-RIPE
+mnt-by:         MNT-GOOG-PROD
+created:        2009-10-02T20:37:42Z
+last-modified:  2009-10-02T21:42:03Z
+source:         RIPE # Filtered
+
+% This query was served by the RIPE Database Query Service version 1.97 (ANGUS)
+
+
