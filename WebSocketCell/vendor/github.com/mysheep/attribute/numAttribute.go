@@ -19,9 +19,8 @@ package attribute
 NumAttribute - Numeric Attribute
 */
 type numAttribute struct {
-	NumType string //"int"
-	Min     int    // nil
-	Max     int    // nil
+	Min int // nil
+	Max int // nil
 	Attribute
 }
 

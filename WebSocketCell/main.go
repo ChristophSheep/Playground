@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/mysheep/attribute"
 	"github.com/mysheep/wscell"
 )
@@ -18,41 +20,54 @@ import (
 //
 func main() {
 
-	//
-	// Info: Only one cell could be create by one process
-	//
-
 	// TODO:
 	// - So we need a JSON Config
 	// - Config has information about cell
-	// - COnfig has information about connect to
+	// - Config has information about connect to
 
+	// Parse parameter
+	portPtr := flag.String("port", "1234", "the port")
+	namePtr := flag.String("name", "Adder", "the name")
+	portToPtr := flag.String("portto", "", "the port connect to")
+	flag.Parse()
+
+	// Create input Attributes
+	//
 	attrA := attribute.CreateIntAttribute("A")
 	attrB := attribute.CreateIntAttribute("B")
+	attrC := attribute.CreateIntAttribute("C") // c = a + b
+	attrD := attribute.CreateIntAttribute("D") // d = a - b
 
-	spec1 := wscell.Spec{
+	portTo := *portToPtr
+	conns := []wscell.Connection{}
+
+	if portTo != "" {
+		connA := wscell.CreateConnection("C", "ws://127.0.0.1:"+portTo, "A")
+		connB := wscell.CreateConnection("B", "ws://127.0.0.1:"+portTo, "B")
+		conns = []wscell.Connection{
+			connA,
+			connB,
+		}
+	}
+
+	// TODO:
+	// - CalcFns -> out = fn(in)
+	//
+	spec := wscell.Spec{
 		IP:   "localhost",
-		Port: "1234",
+		Port: *portPtr,
+		Name: *namePtr,
 		Attributes: []attribute.Attribute{
 			attrA,
 			attrB,
+			attrC,
+			attrD,
 		},
+		Connections: conns,
 	}
 
-	// Cell 1
+	// Create cell and listen
 	//
-	cell1 := wscell.Create(spec1)
+	wscell.CreateAndListen(spec)
 
-	// TODO
-	spec2 := spec1
-
-	// Cell 2
-	//
-	cell2 := wscell.Create(spec2)
-
-	// TODO
-
-	// cell1.A -----> cell2.A
-	//
-	cell1.ConnectTo(cell1.GetAttributByName("A"), cell2, cell2.GetAttributByName("A"))
 }

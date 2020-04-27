@@ -38,10 +38,18 @@ func (i intAttribute) String() string {
 	return fmt.Sprintf("{%v, Min:%v, Max:%v}", i.attribute.String(), i.Min(), i.Max())
 }
 
+// IntSpec TODO
+type IntSpec struct {
+	Name  string
+	Value int
+}
+
 // CreateIntAttribute TODO
 func CreateIntAttribute(name string) IntAttribute {
 
-	attr := createAttribute(name)
+	spec := NewSpec(name)
+
+	attr := createAttribute(spec)
 
 	attr.SetValue(0) // TODO: Rethink
 

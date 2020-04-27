@@ -42,14 +42,32 @@ type Attribute interface {
 	IsStoreable() bool
 }
 
-func createAttribute(name string) attribute {
-	attr := attribute{
-		name:        name,
-		isReadable:  true,
-		isWriteable: true,
-		isStoreable: true,
+// Spec struct
+type Spec struct {
+	Name        string
+	IsReadable  bool
+	IsWriteable bool
+	IsStoreable bool
+}
+
+// NewSpec constructor
+func NewSpec(name string) Spec {
+	return Spec{
+		Name:        name,
+		IsReadable:  true,
+		IsWriteable: true,
+		IsStoreable: true,
 	}
-	return attr
+}
+
+// Private constructor
+func createAttribute(spec Spec) attribute {
+	return attribute{
+		name:        spec.Name,
+		isReadable:  spec.IsReadable,
+		isWriteable: spec.IsWriteable,
+		isStoreable: spec.IsStoreable,
+	}
 }
 
 // Empty attribute
