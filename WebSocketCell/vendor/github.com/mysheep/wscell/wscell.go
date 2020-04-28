@@ -21,46 +21,6 @@ type Spec struct {
 	Connections []Connection
 }
 
-// createInputHandler
-func createInputHandler(inputName string) func(*websocket.Conn) {
-	inputHandler := func(ws *websocket.Conn) {
-		for {
-
-			var message string
-			err := websocket.Message.Receive(ws, &message)
-
-			now := time.Now().Format(time.StampMilli)
-			if err != nil {
-				fmt.Printf("%s - Received error '%v'\n", now, err)
-			} else {
-				fmt.Printf("%s - Received message '%s' at input '%s'\n", now, message, inputName)
-			}
-
-			// Wait
-			time.Sleep(200 * time.Millisecond)
-		}
-	}
-	return inputHandler
-}
-
-func createInputs(spec Spec) {
-
-	// Create an input connection point
-	// for each attributes
-	// ws://{ip}:{port}/{Name}
-	// e.g.
-	//   ws://localhost:1234/A
-	for _, attr := range spec.Attributes {
-		fmt.Printf("Create input connection point at 'ws://%s:%s/%s'\n", spec.IP, spec.Port, attr.Name())
-		http.Handle("/"+attr.Name(), websocket.Handler(createInputHandler(attr.Name())))
-	}
-}
-
-func createAddress(spec Spec) string {
-	address := spec.IP + ":" + spec.Port
-	return address
-}
-
 // CreateAndListen TODO
 //
 //           *CELL1*					   *CELL2*
@@ -80,11 +40,16 @@ func CreateAndListen(spec Spec) {
 	var err error
 
 	// Create INPUT connection points
-	// e.g. can be connect via "ws://localhost:1234/inputA"
+	// e.g. can be connect via
+	//  A.."ws://localhost:1234/inputA"
+	//  B.."ws://localhost:1234/inputB"
+	//  C.."ws://localhost:1234/inputC"
+	//  D.."ws://localhost:1234/inputD"
 	createInputs(spec)
 
 	// Create OUTPUT connections
 	createOutputConnections(spec)
+	defer closeConnections(connectionMap)
 
 	// Listen to clients connecting
 	// ws://{ip}:{port}/{Name}
@@ -100,33 +65,78 @@ func CreateAndListen(spec Spec) {
 
 	go func() {
 
-		send := func(name string, conn *websocket.Conn) {
-			if conn != nil {
+		printDebug := func(msg string, err error, name string) {
+			now := time.Now().Format(time.StampMilli)
+			if err != nil {
+				fmt.Printf("%s - Send a message error: %v\n", now, err)
+			} else {
+				fmt.Printf("%s - Send a message '%s' to attribute '%s'\n", now, msg, name)
+			}
+		}
 
+		sendTest := func(name string, conn *websocket.Conn) {
+			if conn != nil {
 				msg := "heyho - " + name
 				err := websocket.Message.Send(conn, msg)
-
-				now := time.Now().Format(time.StampMilli)
-				if err != nil {
-					fmt.Printf("%s - Send a message error: %v\n", now, err)
-				} else {
-					fmt.Printf("%s - Send a message '%s' to attribute '%s'\n", now, msg, name)
-				}
+				printDebug(msg, err, name)
 			}
-
-			time.Sleep(200 * time.Millisecond)
 		}
 
 		for {
 
-			for k, v := range connectionMap {
-				send(k, v)
+			// Sent to all
+			for attrName, conn := range connectionMap {
+				sendTest(attrName, conn)
+				time.Sleep(200 * time.Millisecond)
 			}
 
 		}
 	}()
 
 	<-done
+}
+
+func createInputHandler(inputName string) func(*websocket.Conn) {
+
+	printMessage := func(message string, err error) {
+
+		now := time.Now().Format(time.StampMilli)
+
+		if err != nil {
+			fmt.Printf("%s - Received an error '%v'\n", now, err)
+		} else {
+			fmt.Printf("%s - Received message '%s' at input '%s'\n", now, message, inputName)
+		}
+	}
+
+	inputHandler := func(ws *websocket.Conn) {
+
+		var message string
+
+		for {
+			err := websocket.Message.Receive(ws, &message)
+			printMessage(message, err)
+			time.Sleep(200 * time.Millisecond)
+		}
+	}
+	return inputHandler
+}
+
+func createInputs(spec Spec) {
+
+	printDebug := func(name string) {
+		fmt.Printf("Create input connection point at 'ws://%s:%s/%s'\n", spec.IP, spec.Port, name)
+	}
+
+	for _, attr := range spec.Attributes {
+		printDebug(attr.Name())
+		http.Handle("/"+attr.Name(), websocket.Handler(createInputHandler(attr.Name())))
+	}
+}
+
+func createAddress(spec Spec) string {
+	address := spec.IP + ":" + spec.Port
+	return address
 }
 
 func createOutputConnections(spec Spec) {
@@ -147,6 +157,15 @@ func createOutputConnections(spec Spec) {
 	}
 }
 
+func closeConnections(conns map[string]*websocket.Conn) {
+	for _, conn := range conns {
+		if conn != nil {
+			fmt.Println("Close connection")
+			conn.Close()
+		}
+	}
+}
+
 func isConnected(attrName string) bool {
 	if _, ok := connectionMap[attrName]; ok {
 		return true
@@ -158,6 +177,7 @@ func getDestURL(conn Connection) string {
 	url := fmt.Sprintf("%s/%s", conn.DestAddress(), conn.DestAttrName())
 	return url
 }
+
 func getOrigin(conn Connection) string {
 	url := fmt.Sprintf("http://%s/", conn.DestAddress())
 	return url
