@@ -2,15 +2,64 @@ package main
 
 import (
 	"flag"
+	"net/url"
 
 	"github.com/mysheep/attribute"
 	"github.com/mysheep/wscell"
 )
 
+// Empty
+const EMPTY = "empty"
+
+// Parameter of cell
+type Parameter struct {
+	Name   string
+	Port   string
+	PortTo string
+}
+
+func getParameter() Parameter {
+
+	portPtr := flag.String("port", "7777", "the port")
+	namePtr := flag.String("name", "Adder", "the name")
+	portToPtr := flag.String("portto", EMPTY, "the port connect to")
+
+	flag.Parse()
+
+	return Parameter{
+		Name:   *namePtr,
+		Port:   *portPtr,
+		PortTo: *portToPtr,
+	}
+}
+
+func createURL(scheme string, host string, port string, path string) string {
+
+	if host == "" {
+		host = "localhost"
+	}
+
+	if scheme == "" {
+		scheme = "ws"
+	}
+
+	url := url.URL{
+		Scheme: scheme,
+		Host:   host + ":" + port,
+		Path:   path,
+	}
+
+	return url.String()
+}
+
+func createConnURL(port string) string {
+	return createURL("", "", port, "")
+}
+
 //
 //           *CELL1*					   *CELL2*
 //       +------------+					+------------+
-//	  -->o /inA  outA o---->  ....  --->o /inA  outA o---->
+//	  -->o /inA  outB o---->  ....  --->o /inA  outA o---->
 //	     |            | 				|            |
 //	  -->o /inB  outB o---->  ....  --->o /inB  outB o---->
 //       +------------+					+------------+
@@ -20,17 +69,18 @@ import (
 //
 func main() {
 
+	// Switch logging off
+	//
+	//log.SetOutput(ioutil.Discard)
+
 	// TODO:
-	// - So we need a JSON Config
-	// - Config has information about cell
-	// - Config has information about connect to
+	// - So we need a JSON Config:
+	// 		- Config has information about cell
+	// 		- Config has information about connecting to
 
 	// Command line params
 	//
-	portPtr := flag.String("port", "7777", "the port")
-	namePtr := flag.String("name", "Adder", "the name")
-	portToPtr := flag.String("portto", "", "the port connect to")
-	flag.Parse()
+	params := getParameter()
 
 	// Create attributes
 	//
@@ -44,34 +94,39 @@ func main() {
 
 	// Create connections
 	//
-	portTo := *portToPtr
+
+	// --------------------
+	// 	+---+
+	// 	| A |
+	// 	| B |      +---+
+	// 	| C |o---->| A |o
+	// 	| D |o---->| B |o
+	// 	+---+	   | C |o
+	// 	Cell1	   | D |o
+	//             +---+
+	//  		   Cell2
+	// --------------------
+
 	conns := []wscell.Connection{}
+	if params.PortTo != EMPTY {
 
-	// +---+ Cell1
-	// | A |
-	// | B |      +---+ Cell2
-	// | C |o---->| A |
-	// | D |o---->| B |
-	// +---+	  | C |
-	// 			  | D |
-	//            +---+
-
-	if portTo != "" {
-		connA := wscell.CreateConnection("C", "ws://127.0.0.1:"+portTo, "A")
-		connB := wscell.CreateConnection("B", "ws://127.0.0.1:"+portTo, "B")
+		connA := wscell.CreateConnection("C", createConnURL(params.PortTo), "A")
+		connB := wscell.CreateConnection("B", createConnURL(params.PortTo), "B")
 		conns = []wscell.Connection{
 			connA,
 			connB,
 		}
 	}
 
+	//  cell://"adder":localhost:7777/{A,B}|{C->A, D->B}
+
 	// TODO:
 	// - CalcFns -> out = fn(in)
 	//
 	spec := wscell.Spec{
-		IP:          "localhost",
-		Port:        *portPtr,
-		Name:        *namePtr,
+		IP:          "localhost", // TODO: always localhost or??
+		Port:        params.Port,
+		Name:        params.PortTo,
 		Attributes:  attrs,
 		Connections: conns,
 	}

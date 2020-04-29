@@ -2,6 +2,8 @@ package wscell
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -49,6 +51,8 @@ func CreateAndListen(spec Spec) {
 
 	// Create OUTPUT connections
 	createOutputConnections(spec)
+
+	// CleanUp at end
 	defer closeConnections(connectionMap)
 
 	// Listen to clients connecting
@@ -56,7 +60,7 @@ func CreateAndListen(spec Spec) {
 	// e.g.
 	//   ws://localhost:1234
 	go func() {
-		fmt.Printf("Start '%s' to listen on inputs\n", spec.Name)
+		log.Printf("Start '%s' to listen on inputs\n", spec.Name)
 		err = http.ListenAndServe(createAddress(spec), nil)
 		if err != nil {
 			panic(err)
@@ -66,11 +70,10 @@ func CreateAndListen(spec Spec) {
 	go func() {
 
 		printDebug := func(msg string, err error, name string) {
-			now := time.Now().Format(time.StampMilli)
 			if err != nil {
-				fmt.Printf("%s - Send a message error: %v\n", now, err)
+				log.Printf("Send a message error: %v\n", err)
 			} else {
-				fmt.Printf("%s - Send a message '%s' to attribute '%s'\n", now, msg, name)
+				log.Printf("Send a message '%s' to attribute '%s'\n", msg, name)
 			}
 		}
 
@@ -82,15 +85,16 @@ func CreateAndListen(spec Spec) {
 			}
 		}
 
-		for {
+		time.Sleep(1 * time.Second)
 
-			// Sent to all
-			for attrName, conn := range connectionMap {
+		for i := 0; i < 100000; i++ {
+			// TODO: MultiCast
+			for attrName, conn := range connectionMap { // Sent to all
 				sendTest(attrName, conn)
-				time.Sleep(200 * time.Millisecond)
 			}
-
+			//time.Sleep( * time.Millisecond)
 		}
+
 	}()
 
 	<-done
@@ -99,33 +103,39 @@ func CreateAndListen(spec Spec) {
 func createInputHandler(inputName string) func(*websocket.Conn) {
 
 	printMessage := func(message string, err error) {
-
-		now := time.Now().Format(time.StampMilli)
-
 		if err != nil {
-			fmt.Printf("%s - Received an error '%v'\n", now, err)
+			log.Printf("Received an error '%v'\n", err)
 		} else {
-			fmt.Printf("%s - Received message '%s' at input '%s'\n", now, message, inputName)
+			log.Printf("Received message '%s' at attribute '%s'\n", message, inputName)
 		}
 	}
 
-	inputHandler := func(ws *websocket.Conn) {
+	inputHandler := func(conn *websocket.Conn) {
 
-		var message string
+		log.Printf("Start inputhandler for attribute '%s'\n", inputName)
 
+		message := ""
 		for {
-			err := websocket.Message.Receive(ws, &message)
+			// Wait
+			err := websocket.Message.Receive(conn, &message)
+			// EOF -> leave -> Client went away
+			if err == io.EOF {
+				break
+			}
+			// Print
 			printMessage(message, err)
-			time.Sleep(200 * time.Millisecond)
 		}
+
+		log.Printf("Leave inputhandler for attribute '%s'\n", inputName)
 	}
+
 	return inputHandler
 }
 
 func createInputs(spec Spec) {
 
 	printDebug := func(name string) {
-		fmt.Printf("Create input connection point at 'ws://%s:%s/%s'\n", spec.IP, spec.Port, name)
+		log.Printf("Create input connection point at 'ws://%s:%s/%s'\n", spec.IP, spec.Port, name)
 	}
 
 	for _, attr := range spec.Attributes {
@@ -142,13 +152,13 @@ func createAddress(spec Spec) string {
 func createOutputConnections(spec Spec) {
 	for _, conn := range spec.Connections {
 
-		fmt.Printf("Try to connect to %s\n", getDestURL(conn))
+		log.Printf("Try to connect to %s\n", getDestURL(conn))
 		wsConn, err := websocket.Dial(getDestURL(conn), "", getOrigin(conn))
 		if err != nil {
-			fmt.Printf("Could not connect to %s\n", getDestURL(conn))
+			log.Printf("Could not connect to %s\n", getDestURL(conn))
 			connectionMap[conn.DestAttrName()] = nil
 		} else {
-			fmt.Printf("Connection to %s established\n", getDestURL(conn))
+			log.Printf("Connection to %s established\n", getDestURL(conn))
 			// Add connection to map
 			// e.g. connectionMap["A"] = ws://127.0.0.1:1234/C
 			// Attribute "A" is connect to cell "ws://127.0.0.1:1234" at attribut "C"
@@ -160,7 +170,7 @@ func createOutputConnections(spec Spec) {
 func closeConnections(conns map[string]*websocket.Conn) {
 	for _, conn := range conns {
 		if conn != nil {
-			fmt.Println("Close connection")
+			log.Println("Close connection")
 			conn.Close()
 		}
 	}
